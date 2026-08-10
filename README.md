@@ -54,12 +54,12 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | key | what it does |
 |---|---|
 | stack | floats the GitButler stack for the focused agent |
-| tabs | cycles the tabs of the focused Herdr window |
 | land | lands the focused agent's branches, bottom first |
-| esc | taps Esc, wherever the focus is |
+| tabs | cycles the tabs of the focused Herdr window |
+| new tab | opens a Herdr tab beside the focused agent |
 
-**Row 4** is a new Herdr tab, the voice key — it taps right control, which
-starts and stops [Monologue](https://www.monologue.to) — and Enter.
+**Row 4** is Esc — it taps Esc wherever the focus is — the voice key, which taps
+right control to start and stop [Monologue](https://www.monologue.to), and Enter.
 
 The new-tab key opens a tab beside the focused agent, in the directory that
 agent is working in, focuses it, and brings the terminal forward. Esc and Enter

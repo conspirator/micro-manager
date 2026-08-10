@@ -5,7 +5,7 @@ import XCTest
 /// when keys 6–12 reported `ACT` names the parser dropped, and once when two
 /// matrix positions shared one action. Both looked like working software.
 ///
-/// Key 10 is deliberately not pressed here: it talks to Herdr, and a test that
+/// Key 9 is deliberately not pressed here: it talks to Herdr, and a test that
 /// creates a tab on the machine running it is a test nobody wants to run twice.
 @MainActor
 final class KeyPressRoutingTests: XCTestCase {

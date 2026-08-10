@@ -220,7 +220,7 @@ extension StatusMapperTests {
     func testTheSystemKeysShareOneColourAndSitOnTheRightIDs() {
         let esc = StatusMapper.systemKeyThread(id: Pad.escKeyID)
         let enter = StatusMapper.systemKeyThread(id: Pad.enterKeyID)
-        XCTAssertEqual(esc.id, 9)
+        XCTAssertEqual(esc.id, 10)
         XCTAssertEqual(enter.id, 12)
         XCTAssertEqual(esc.color, enter.color, "esc and enter are the same kind of key")
     }

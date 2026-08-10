@@ -173,17 +173,17 @@ public enum Pad {
     /// Toggles the GitButler stack for the focused agent's directory. First key
     /// of row 3, so the agent block above it stays whole.
     public static let stackKeyID = 6
-    /// Cycles the tabs of the focused tab's workspace in Herdr. Second key of
-    /// row 3, next to the stack key.
-    public static let tabCycleKeyID = 7
+    /// Cycles the tabs of the focused tab's workspace in Herdr. Third key of
+    /// row 3, next to the land key.
+    public static let tabCycleKeyID = 8
     /// Lands the focused agent's stack onto the target, bottom branch first.
-    /// Third key of row 3, next to the tab-cycle key.
-    public static let landKeyID = 8
-    /// Taps Esc, wherever the focus is. Last key of row 3.
-    public static let escKeyID = 9
-    /// Creates a Herdr tab beside the focused agent and lands in it. First key
-    /// of the bottom row.
-    public static let newTabKeyID = 10
+    /// Second key of row 3, next to the stack key.
+    public static let landKeyID = 7
+    /// Taps Esc, wherever the focus is. First key of the bottom row.
+    public static let escKeyID = 10
+    /// Creates a Herdr tab beside the focused agent and lands in it. Last key
+    /// of row 3.
+    public static let newTabKeyID = 9
     /// Starts or stops Monologue, by tapping right control. Middle of the
     /// bottom row.
     ///
@@ -198,7 +198,7 @@ public enum Pad {
     /// The four keys whose role a `config.json` string may replace with a text
     /// macro. The agent and action keys are deliberately not in this list: a
     /// stray config line should not cost you the key that focuses an agent.
-    public static let rebindableKeyIDs = [escKeyID, newTabKeyID, voiceKeyID, enterKeyID]
+    public static let rebindableKeyIDs = [newTabKeyID, escKeyID, voiceKeyID, enterKeyID]
 
     /// The keys bound to `KV_OAI_AG*`, and so the only ones that can be lit.
     /// Every key on the pad now has a role, so this is all of them.

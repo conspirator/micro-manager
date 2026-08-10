@@ -8,13 +8,24 @@ import XCTest
 final class PadGeometryTests: XCTestCase {
 
     func testTheFourFlexibleKeysEachHaveOneRole() {
-        XCTAssertEqual(Pad.escKeyID, 9)
-        XCTAssertEqual(Pad.newTabKeyID, 10)
+        XCTAssertEqual(Pad.newTabKeyID, 9)
+        XCTAssertEqual(Pad.escKeyID, 10)
         XCTAssertEqual(Pad.voiceKeyID, 11)
         XCTAssertEqual(Pad.enterKeyID, 12)
         XCTAssertEqual(Pad.rebindableKeyIDs, [9, 10, 11, 12])
         XCTAssertEqual(Set(Pad.rebindableKeyIDs).count, Pad.rebindableKeyIDs.count,
                        "no key may hold two roles")
+    }
+
+    /// Row 3 reads stack, land, tabs, new tab; the bottom row starts with Esc.
+    /// Pinned because every light and every press is addressed by these ids, so
+    /// a swap that misses one place shows up as a key doing its neighbour's job.
+    func testTheActionRowOrder() {
+        XCTAssertEqual(Pad.stackKeyID, 6)
+        XCTAssertEqual(Pad.landKeyID, 7)
+        XCTAssertEqual(Pad.tabCycleKeyID, 8)
+        XCTAssertEqual(Pad.newTabKeyID, 9)
+        XCTAssertEqual(Pad.escKeyID, 10)
     }
 
     /// Only a key bound to `KV_OAI_AG*` can be lit or heard from, so every role
