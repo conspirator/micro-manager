@@ -85,19 +85,47 @@ reports and 0 bytes**. No keystrokes reached the Mac either. It still enumerated
 as `registered, matched, active` with the `0xff00:1` vendor collection intact, so
 the USB stack was alive and the application firmware was not.
 
-What that episode teaches:
+**The rear button is power, not reset.** From Work Louder's own setup page for
+this pad, <https://worklouder.cc/openai-micro-setup>:
+
+- click once to turn **on**;
+- **hold 2 seconds to turn off** — so "press and hold to reset it" turns the pad
+  off, which then looks exactly like a wedge, because a powered-off pad still
+  enumerates over USB;
+- click once while on to **sleep**, then any key wakes it;
+- holding it 3 seconds enters Bluetooth comms mode instead (underglow blue).
+
+Hold it far too long and the backlight goes **red**: that is a factory reset, and
+it wipes the keymap. Keep a copy of `keymap.json` somewhere durable first.
+
+**The real reset is inside the case** (their step 08, for "if your Micro freezes,
+or will not turn on/off"): four corner screws, lift the PCB gently — a flat cable
+runs to a lower board — and press the button marked with **one dot** (Reset; two
+dots is Boot). That is the only reliable reboot for a wedged firmware task,
+because the battery means pulling USB is not a power cycle.
+
+**Firmware v0.6.2-rc.9 describes this failure as a bug it fixes**, in
+<https://github.com/worklouder/cm-v2-fw-releases/releases>: "the charging-only
+state keeps lighting, controls, and communication disabled until the device is
+restarted or the cable is removed", plus "accidental rear-button activity cannot
+immediately interrupt the transition" and "interrupted power transitions can
+recover safely". Earlier notes mention recovery from "blocked USB communication"
+and from a device that "appears connected but stops responding". Check what
+firmware a pad is on before blaming this app.
+
+**Work Louder warn that other input-monitoring apps break communication with the
+pad**, naming Karabiner and Logitech Options+. Anything holding Input Monitoring
+for hotkeys is a suspect — on this machine that includes Raycast and Monologue —
+and it is the same failure as running the Inspector alongside the bridge.
+
+What that episode teaches, in general:
 
 - **Three silent clients means the device.** This app, the Inspector and Work
   Louder's own Input app all hung on the same pad. One client failing is a bug
   in that client; all three failing is the hardware, and no amount of reading
   this code will fix it.
-- **Unplugging USB is not a power cycle.** The pad has a battery: the lights stay
-  on and the firmware keeps running with the cable out. There is no software
-  reset for a wedged firmware task, and the back button did nothing. Draining
-  the battery is the only cold boot available without opening the case.
-- **`0x303A` is Espressif**, so this is an ESP32-S3. Holding a boot button alone
-  does nothing; a reset is a brief press, and download mode needs boot held
-  *across* a reset — which a battery-backed board will not give you.
+- **`0x303A` is Espressif**, so this is an ESP32-S3. The external button will not
+  give you a bootloader; Reset and Boot are both internal.
 - **Do not diagnose RPC while the app is running.** Quit it first. Every bridge
   start used to write flash (see the fix on 2026-08-10), and a second client
   turns "no reply" into a puzzle with two possible causes.
@@ -111,6 +139,12 @@ swift build
 swiftc -o probe main.swift -I .build/debug -L .build/debug -lWLKit \
   -framework IOKit -framework AppKit
 ```
+
+Two outside references worth knowing, both clean-room and both agreeing with this
+repo's reading of the protocol: <https://github.com/panghy/cm2-probe> (documents
+`sys.bootloader` as a real method, and confirms lighting never touches flash
+while `fs.write` does) and
+<https://github.com/boopdotpng/work-louder-oai/blob/main/docs/PROTOCOL.md>.
 
 
 ## Traps that waste time
