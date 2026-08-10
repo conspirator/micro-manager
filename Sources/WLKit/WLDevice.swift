@@ -27,6 +27,16 @@ public final class WLDevice {
     public static let channelRPC: UInt8 = 2
     public static let maxChunk = 61
     public static let reportSize = 64
+    /// Ceiling on the RPC reassembly buffer.
+    ///
+    /// This used to be 8192, which was under the size of a real reply: a
+    /// `fs.read keymap.json` on a pad with custom profiles is 11,403 bytes in
+    /// 187 reports. The buffer was cleared mid-flight, the reply never closed,
+    /// and `fs.read` timed out — which meant the keymap was never applied and
+    /// every key kept its stock keycode, so the pad answered no press at all.
+    /// The ceiling only exists to stop a desynchronised stream growing without
+    /// bound, so it belongs far above any payload the firmware can produce.
+    public static let maxRPCBuffer = 1 << 20
 
     public struct Info {
         public var product: String
@@ -295,7 +305,9 @@ public final class WLDevice {
 
     // MARK: - Receive
 
-    private func handleReport(_ bytes: [UInt8], reportID: UInt32) {
+    /// Internal rather than private so tests can drive reassembly without a
+    /// pad: the bug this guards against only shows up over many reports.
+    func handleReport(_ bytes: [UInt8], reportID: UInt32) {
         onRawReport?(reportID, bytes)
         // The input callback delivers the report id out-of-band, so the
         // payload normally starts at index 0 — but be tolerant of stacks that
@@ -326,7 +338,7 @@ public final class WLDevice {
 
         rpcAccumulator += text
         drainRPC()
-        if rpcAccumulator.count > 8192 { rpcAccumulator = "" }
+        if rpcAccumulator.count > WLDevice.maxRPCBuffer { rpcAccumulator = "" }
         return true
     }
 
