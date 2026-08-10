@@ -33,7 +33,7 @@ all three drive the same lighting and will overwrite each other.
 ## What the pad does
 
 **The icon** shows state at a glance: dimmed when off, a coloured dot when
-running — green all idle, amber something working, red something needs you —
+running — blue all idle, amber something working, red something needs you —
 and a badge when the pad is missing or permission is denied.
 
 **The top six keys** are one agent each, in the order Herdr's own panel lists

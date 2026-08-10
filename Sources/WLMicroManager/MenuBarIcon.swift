@@ -44,14 +44,20 @@ enum MenuBarIcon {
         }
 
         /// nil keeps the icon templated, so it matches the menu bar.
+        ///
+        /// The colours come from `BridgeConfig` rather than a second set of
+        /// literals, so the dot cannot drift from the keys it summarises.
+        /// `allIdle` covers Herdr's "done" as well as its "idle", and means
+        /// nothing needs you, so it takes the quiet colour.
         var dot: NSColor? {
+            let palette = BridgeConfig()
             switch self {
             case .off, .idle: return nil
             case .permissionDenied: return .systemRed
             case .deviceMissing: return .systemGray
-            case .allIdle: return NSColor(srgbRed: 0, green: 0.78, blue: 0.33, alpha: 1)
-            case .working: return NSColor(srgbRed: 1, green: 0.63, blue: 0, alpha: 1)
-            case .blocked: return NSColor(srgbRed: 1, green: 0.18, blue: 0.18, alpha: 1)
+            case .allIdle: return NSColor(packedRGB: palette.color(for: "idle"))
+            case .working: return NSColor(packedRGB: palette.color(for: "working"))
+            case .blocked: return NSColor(packedRGB: palette.color(for: "blocked"))
             }
         }
 
@@ -107,5 +113,19 @@ enum MenuBarIcon {
         composed.unlockFocus()
         composed.isTemplate = false
         return composed
+    }
+}
+
+/// The status palette is stored the way the firmware wants it — one packed
+/// 0xRRGGBB integer — so unpack it here rather than restating each colour as
+/// floats.
+private extension NSColor {
+    convenience init(packedRGB: Int) {
+        self.init(
+            srgbRed: CGFloat((packedRGB >> 16) & 0xFF) / 255,
+            green: CGFloat((packedRGB >> 8) & 0xFF) / 255,
+            blue: CGFloat(packedRGB & 0xFF) / 255,
+            alpha: 1
+        )
     }
 }
