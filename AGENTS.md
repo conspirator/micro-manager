@@ -64,25 +64,54 @@ it drifts, the wasted press is the one Monologue throws away anyway.
 
 ## Open problems
 
-1. **`isAgentKeymapApplied` over-verifies.** This pad's joystick is
-   `type: VENDOR` with `sectors: []`, and the check demands all four cardinal
-   sector codes — unsatisfiable against an empty list. So `apply()` writes the
-   keymap successfully and *then* throws `notAccepted`, leaving `keymapReady`
-   false and a scary error in the panel while the grid and dial are bound
-   correctly (grid PASS, encoder PASS, joystick FAIL). Verification should check
-   only what the layer actually has, mirroring what `withAgentKeymap` writes.
-2. **`cycleTabs()` and `injectPrompt()` never call `raiseTerminal()`.**
+1. **`cycleTabs()` and `injectPrompt()` never call `raiseTerminal()`.**
    `focusSlot()` does, deliberately — "an agent key pressed from a browser used
    to move a cursor you could not see". `newTab()` does too, for the same
    reason. The tab-cycle and macro keys never got the same treatment: the action
    fires, Herdr accepts it, and nothing visible happens because the terminal
    stays behind whatever window is in front.
-3. **Reassembly is quadratic.** `drainRPC` rescans the buffer for a complete
+2. **Reassembly is quadratic.** `drainRPC` rescans the buffer for a complete
    object on every chunk: 11 KB parses in 0.06s, 256 KB takes 29s. Fine for a
    keymap, not fine for anything larger.
-4. **`debugAccumulator` still clears at 4096 characters.** Same shape as the RPC
+3. **`debugAccumulator` still clears at 4096 characters.** Same shape as the RPC
    bug that was just fixed, on the device-log channel. Unproven, but a long line
    would vanish the same way.
+
+## The pad can wedge, and USB cannot reset it
+
+On 2026-08-10 the pad stopped answering entirely: `sys.version` timed out for a
+single clean client, and 90 seconds of pressing every key produced **0 raw
+reports and 0 bytes**. No keystrokes reached the Mac either. It still enumerated
+as `registered, matched, active` with the `0xff00:1` vendor collection intact, so
+the USB stack was alive and the application firmware was not.
+
+What that episode teaches:
+
+- **Three silent clients means the device.** This app, the Inspector and Work
+  Louder's own Input app all hung on the same pad. One client failing is a bug
+  in that client; all three failing is the hardware, and no amount of reading
+  this code will fix it.
+- **Unplugging USB is not a power cycle.** The pad has a battery: the lights stay
+  on and the firmware keeps running with the cable out. There is no software
+  reset for a wedged firmware task, and the back button did nothing. Draining
+  the battery is the only cold boot available without opening the case.
+- **`0x303A` is Espressif**, so this is an ESP32-S3. Holding a boot button alone
+  does nothing; a reset is a brief press, and download mode needs boot held
+  *across* a reset — which a battery-backed board will not give you.
+- **Do not diagnose RPC while the app is running.** Quit it first. Every bridge
+  start used to write flash (see the fix on 2026-08-10), and a second client
+  turns "no reply" into a puzzle with two possible causes.
+
+A standalone probe is the fastest way to separate app from device: open
+`WLDevice`, count `onRawReport` bytes, call `sys.version`, and print every
+`onNotification`. Build one against the SwiftPM products without adding a target:
+
+```sh
+swift build
+swiftc -o probe main.swift -I .build/debug -L .build/debug -lWLKit \
+  -framework IOKit -framework AppKit
+```
+
 
 ## Traps that waste time
 
