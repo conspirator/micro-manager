@@ -180,3 +180,53 @@ extension StatusMapperTests {
         XCTAssertEqual(cfg.color(for: "unknown"), 0x00C853)
     }
 }
+
+// MARK: - The four keys below the agent block
+
+extension StatusMapperTests {
+
+    /// These keys gave up the keystroke they used to send when they were bound
+    /// to `KV_OAI_AG*`, so a dark one reads as broken hardware. Every one of
+    /// them stays lit, and in its own colour, so the row is not one blur.
+    func testEveryRoleKeyIsLitAndTellsItselfApart() {
+        let cfg = BridgeConfig()
+        let threads = [
+            StatusMapper.systemKeyThread(id: Pad.escKeyID, cfg),
+            StatusMapper.newTabThread(cfg),
+            StatusMapper.voiceThread(id: Pad.voiceKeyID, active: false, cfg),
+            StatusMapper.macroThread(id: Pad.enterKeyID, cfg),
+        ]
+        for thread in threads {
+            XCTAssertGreaterThan(thread.brightness ?? 0, 0, "key \(thread.id) is dark")
+            XCTAssertNotEqual(thread.effect, .off)
+        }
+        let colors = threads.compactMap(\.color)
+        XCTAssertEqual(Set(colors).count, colors.count, "two roles share a colour")
+    }
+
+    func testTheSystemKeysShareOneColourAndSitOnTheRightIDs() {
+        let esc = StatusMapper.systemKeyThread(id: Pad.escKeyID)
+        let enter = StatusMapper.systemKeyThread(id: Pad.enterKeyID)
+        XCTAssertEqual(esc.id, 9)
+        XCTAssertEqual(enter.id, 12)
+        XCTAssertEqual(esc.color, enter.color, "esc and enter are the same kind of key")
+    }
+
+    /// The new-tab key sits next to the tab-cycle key and does a related thing,
+    /// so it must not be confusable with it at a glance.
+    func testTheNewTabKeyIsNotTheTabCycleKeysColour() {
+        XCTAssertEqual(StatusMapper.newTabThread().id, Pad.newTabKeyID)
+        XCTAssertNotEqual(StatusMapper.newTabThread().color, StatusMapper.tabCycleThread().color)
+    }
+
+    /// An open take is the one state on this row you need to see from across
+    /// the room: full brightness, breathing, and a different colour.
+    func testTheVoiceKeyShowsAnOpenTake() {
+        let idle = StatusMapper.voiceThread(id: Pad.voiceKeyID, active: false)
+        let open = StatusMapper.voiceThread(id: Pad.voiceKeyID, active: true)
+        XCTAssertEqual(open.effect, .breath)
+        XCTAssertEqual(idle.effect, .solid)
+        XCTAssertNotEqual(open.color, idle.color)
+        XCTAssertGreaterThan(open.brightness ?? 0, idle.brightness ?? 1)
+    }
+}

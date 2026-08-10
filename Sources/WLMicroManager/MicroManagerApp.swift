@@ -43,6 +43,19 @@ struct MicroManagerApp: App {
                     }
                     bridge.onVoiceKey = { voice.handleVoiceKey() }
 
+                    // Esc and Enter. The bridge decides which key means what;
+                    // posting the event is the app's job, since it holds the
+                    // Accessibility grant.
+                    bridge.onSystemKey = { [weak bridge] tap in
+                        Task {
+                            do {
+                                try await tap.post()
+                            } catch {
+                                bridge?.noteError(error.localizedDescription)
+                            }
+                        }
+                    }
+
                     let tune = TuneController.shared
                     tune.onError = { [weak bridge] message in
                         bridge?.noteError(message)

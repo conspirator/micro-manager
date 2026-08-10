@@ -217,6 +217,30 @@ public enum HerdrClient {
         _ = try await request("tab.focus", params: ["tab_id": tabID])
     }
 
+    /// Params for `tab.create`, which takes `workspace_id`, `cwd`, `label` and
+    /// `focus` and returns the new tab. Without `focus` the tab is created
+    /// behind your back — verified against Herdr, which answers
+    /// `"focused": false`.
+    ///
+    /// Passing the focused agent's workspace and working directory puts the tab
+    /// beside whatever you were looking at. Omit the fields when nothing has
+    /// focus rather than sending empty ones, so the server applies its own
+    /// defaults.
+    static func createTabParams(beside agent: HerdrAgent?) -> [String: Any] {
+        var params: [String: Any] = ["focus": true]
+        guard let agent, let workspace = agent.workspaceID, !workspace.isEmpty else {
+            return params
+        }
+        params["workspace_id"] = workspace
+        if let cwd = agent.workingDirectory, !cwd.isEmpty { params["cwd"] = cwd }
+        return params
+    }
+
+    /// Opens a new tab beside the focused agent and focuses it.
+    public static func createTab(beside agent: HerdrAgent?) async throws {
+        _ = try await request("tab.create", params: createTabParams(beside: agent))
+    }
+
     /// Injects key chords into a pane, crossterm-style names ("ctrl+alt+v",
     /// "f13", "enter"). The pane's terminal encodes them as if typed.
     public static func sendKeys(paneID: String, keys: [String]) async throws {

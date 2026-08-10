@@ -52,3 +52,44 @@ final class HerdrTabCycleTests: XCTestCase {
         XCTAssertNil(HerdrClient.nextTab(in: tabs))
     }
 }
+
+// MARK: - Creating a tab
+
+extension HerdrTabCycleTests {
+
+    /// `tab.create` opens the tab wherever the server defaults to unless it is
+    /// told otherwise, and returns it *unfocused* unless asked. The key wants
+    /// the tab beside the agent you were looking at, and wants to land in it.
+    func testCreateTabAsksForTheFocusedAgentsWorkspaceAndDirectory() {
+        let agent = HerdrAgent(
+            status: "idle",
+            paneID: "w1:p1",
+            workspaceID: "w1",
+            cwd: "/Users/webb/src/micro-manager",
+            foregroundCwd: "/Users/webb/src/micro-manager/docs",
+            focused: true
+        )
+        let params = HerdrClient.createTabParams(beside: agent)
+        XCTAssertEqual(params["workspace_id"] as? String, "w1")
+        XCTAssertEqual(params["cwd"] as? String, "/Users/webb/src/micro-manager/docs",
+                       "the tab opens where the agent is working, not where its pane started")
+        XCTAssertEqual(params["focus"] as? Bool, true)
+    }
+
+    /// Nothing focused is not a failure: a new tab is still a reasonable thing
+    /// to ask for. Omit the fields rather than sending empty ones, so Herdr
+    /// applies its own defaults.
+    func testCreateTabWithNothingFocusedStillAsksForFocus() {
+        let params = HerdrClient.createTabParams(beside: nil)
+        XCTAssertNil(params["workspace_id"])
+        XCTAssertNil(params["cwd"])
+        XCTAssertEqual(params["focus"] as? Bool, true)
+    }
+
+    func testCreateTabIgnoresAnAgentWithNoWorkspace() {
+        let agent = HerdrAgent(status: "idle", paneID: "p1", focused: true)
+        let params = HerdrClient.createTabParams(beside: agent)
+        XCTAssertNil(params["workspace_id"])
+        XCTAssertNil(params["cwd"])
+    }
+}

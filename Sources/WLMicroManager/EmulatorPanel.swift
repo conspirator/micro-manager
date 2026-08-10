@@ -80,12 +80,13 @@ struct EmulatorView: View {
                         ForEach(row, id: \.self) { key in keyButton(key) }
                     }
                 }
-                // The bottom row starts one column in, and its wide keycap
-                // covers matrix positions 10 and 11 — one cap, one press.
+                // The bottom row starts one column in: the case has a bowtie
+                // silkscreened where its first key would be. The three keys
+                // after it are three separate caps — ACT10, ACT11, ACT12 in the
+                // device keymap.
                 HStack(spacing: Self.gap) {
                     bowtie
-                    keyButton(Pad.voiceKeyIDs[0], width: Self.keyW * 2 + Self.gap)
-                    keyButton(12)
+                    ForEach(Pad.displayRows[3], id: \.self) { key in keyButton(key) }
                 }
             }
             .padding(10)

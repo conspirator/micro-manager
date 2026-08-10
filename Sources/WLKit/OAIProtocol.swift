@@ -179,19 +179,31 @@ public enum Pad {
     /// Lands the focused agent's stack onto the target, bottom branch first.
     /// Third key of row 3, next to the tab-cycle key.
     public static let landKeyID = 8
-    /// The wide key at the bottom left: one keycap over matrix positions 10
-    /// and 11, so both are bound and lit together and a press from either
-    /// half means the same thing — a right-command tap for Superwhisper, unless
-    /// the config file rebinds it to a text macro.
-    public static let voiceKeyIDs = [10, 11]
-    /// Text-macro keys: inject a configured string into the focused agent's
-    /// prompt. Key 9 is the last key of row 3; key 12 is the bottom-right
-    /// corner.
-    public static let macroKeyIDs = [9, 12]
+    /// Taps Esc, wherever the focus is. Last key of row 3.
+    public static let escKeyID = 9
+    /// Creates a Herdr tab beside the focused agent and lands in it. First key
+    /// of the bottom row.
+    public static let newTabKeyID = 10
+    /// Starts or stops Monologue, by tapping right control. Middle of the
+    /// bottom row.
+    ///
+    /// This was once `voiceKeyIDs = [10, 11]`, on the belief that one wide
+    /// keycap covered both positions. The pad's own keymap has three codes in
+    /// row 3 — `ACT10`, `ACT11`, `ACT12` — so 10 and 11 are separate keys, and
+    /// treating them as one left the row a key short.
+    public static let voiceKeyID = 11
+    /// Taps Enter, wherever the focus is. Bottom-right corner.
+    public static let enterKeyID = 12
+
+    /// The four keys whose role a `config.json` string may replace with a text
+    /// macro. The agent and action keys are deliberately not in this list: a
+    /// stray config line should not cost you the key that focuses an agent.
+    public static let rebindableKeyIDs = [escKeyID, newTabKeyID, voiceKeyID, enterKeyID]
+
     /// The keys bound to `KV_OAI_AG*`, and so the only ones that can be lit.
-    /// With the macro and voice keys this is now the whole pad.
+    /// Every key on the pad now has a role, so this is all of them.
     public static let boundKeyIDs =
-        agentKeyIDs + [stackKeyID, tabCycleKeyID, landKeyID] + voiceKeyIDs + macroKeyIDs
+        agentKeyIDs + [stackKeyID, tabCycleKeyID, landKeyID] + rebindableKeyIDs
 
     // MARK: Dial and joystick
 

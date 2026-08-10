@@ -1,6 +1,6 @@
 import Foundation
 
-/// User-configurable text macros for the spare keys.
+/// User-configurable text macros for the keys that have a rebindable role.
 ///
 /// Read from `$XDG_CONFIG_HOME/micromanager/config.json`
 /// (`~/.config/micromanager/config.json` by default):
@@ -8,18 +8,16 @@ import Foundation
 ///     {
 ///       "keys": {
 ///         "9": "Open PRs for all active GitButler branches",
-///         "12": "Run but pull",
-///         "10+11": "Summarise what you are working on"
+///         "12": "Run but pull"
 ///       },
 ///       "claude": { "models": ["fable", "opus"], "efforts": ["low", "high"] },
 ///       "codex":  { "models": ["gpt-5.6-sol", "gpt-5.6-codex"] }
 ///     }
 ///
-/// A bound string is injected into the focused agent's prompt, unsubmitted.
-/// `"10+11"` addresses the wide key as one; `"10"` and `"11"` address its
-/// halves separately. Keys the file does not mention keep their defaults —
-/// 9 and 12 have the defaults below, the wide key defaults to the voice key.
-/// An empty string unbinds a key outright.
+/// A bound string is injected into the focused agent's prompt, unsubmitted, in
+/// place of what the key would otherwise do. Only `Pad.rebindableKeyIDs` are
+/// listened to, and none of them has a default: every key on the pad now has a
+/// role of its own, and a default string here would silently replace one.
 public struct KeyBindings: Sendable, Equatable {
 
     public private(set) var texts: [Int: String]
@@ -35,10 +33,7 @@ public struct KeyBindings: Sendable, Equatable {
     /// the panel shows the steering guide alone.
     public private(set) var codexModels: [String]
 
-    public static let defaults: [Int: String] = [
-        9: "Open PRs for all active GitButler branches",
-        12: "Run but pull",
-    ]
+    public static let defaults: [Int: String] = [:]
     public static let defaultClaudeModels = ["fable", "opus", "sonnet", "haiku"]
     public static let defaultClaudeEfforts = ["low", "medium", "high", "xhigh", "max"]
 
@@ -107,7 +102,9 @@ public struct KeyBindings: Sendable, Equatable {
     }
 
     private static func keyIDs(for name: String) -> [Int] {
-        if name == "10+11" { return Pad.voiceKeyIDs }
+        // "10+11" used to address the wide keycap as one. There is no such cap:
+        // row 3 is three separate keys, so a compound name would bind two of
+        // them to one string without saying so.
         guard let id = Int(name) else { return [] }
         return [id]
     }

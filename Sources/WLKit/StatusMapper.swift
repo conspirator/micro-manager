@@ -36,6 +36,12 @@ public struct BridgeConfig: Sendable {
     /// Same reasoning for the tab-cycle key, in a colour of its own so the two
     /// action keys read as different things.
     public var tabCycleColor: Int = 0x00BFA5
+    /// The new-tab key sits next to the tab-cycle key and does a neighbouring
+    /// thing, so it takes a related hue — far enough from the tab-cycle teal to
+    /// tell the two apart at a glance.
+    public var newTabColor: Int = 0x00E5FF
+    /// Esc and Enter: pale and unemphatic, because they are just keys.
+    public var systemColor: Int = 0xCFD8DC
     /// The land key pushes to the target, so it gets a colour with some weight
     /// to it — distinct from blocked-red, which means "look", not "beware".
     public var landColor: Int = 0xE91E63
@@ -138,9 +144,36 @@ public enum StatusMapper {
         )
     }
 
-    /// One half of the voice key — the callers paint both matrix positions
-    /// identically so the single wide keycap reads as one light. Dim white at
-    /// rest; breathing red while a Claude voice take is open.
+    /// The new-tab key's thread: dim while idle like its neighbours, since it
+    /// has no state of its own to show.
+    public static func newTabThread(_ cfg: BridgeConfig = BridgeConfig()) -> OAI.Thread {
+        OAI.Thread(
+            id: Pad.newTabKeyID,
+            color: cfg.newTabColor,
+            brightness: cfg.brightness * 0.3,
+            effect: .solid,
+            speed: cfg.speed
+        )
+    }
+
+    /// Esc and Enter. Same reasoning as the action keys: binding them to an AG
+    /// keycode took away the keystroke the pad used to send, so the app posts it
+    /// instead and the key stays lit to show it is bound.
+    public static func systemKeyThread(
+        id: Int,
+        _ cfg: BridgeConfig = BridgeConfig()
+    ) -> OAI.Thread {
+        OAI.Thread(
+            id: id,
+            color: cfg.systemColor,
+            brightness: cfg.brightness * 0.25,
+            effect: .solid,
+            speed: cfg.speed
+        )
+    }
+
+    /// The voice key. Dim white at rest; breathing red while a Monologue take is
+    /// open, which is the one state on this row worth seeing across a room.
     public static func voiceThread(
         id: Int,
         active: Bool,

@@ -41,11 +41,11 @@ public final class BridgeController: ObservableObject {
     @Published public private(set) var stackPanelOpen = false
     /// Same for the land window.
     @Published public private(set) var landPanelOpen = false
-    /// Whether a Claude voice take is open, for the voice key's light.
+    /// Whether a Monologue take is open, for the voice key's light.
     @Published public private(set) var voiceActive = false
 
     public var config: BridgeConfig
-    /// Text macros for the spare keys, reloaded on every bridge start so a
+    /// Text macros for the rebindable keys, reloaded on every bridge start so a
     /// config edit only needs an off/on toggle, not a relaunch.
     public private(set) var keyBindings = KeyBindings.load()
 
@@ -54,8 +54,11 @@ public final class BridgeController: ObservableObject {
     public var onStackKey: (() -> Void)?
     /// Called when the land key is pressed; same split as `onStackKey`.
     public var onLandKey: (() -> Void)?
-    /// Called when either half of the wide voice key is pressed.
+    /// Called when the voice key is pressed.
     public var onVoiceKey: (() -> Void)?
+    /// Called with the keystroke a key stands for — Esc, Enter. The bridge knows
+    /// which key means what; the app has the Accessibility grant to post it.
+    public var onSystemKey: ((SystemKeyTap) -> Void)?
     /// Called per dial detent: +1 clockwise, -1 counter-clockwise.
     public var onDial: ((Int) -> Void)?
     /// Called when the joystick enters a cardinal sector.
@@ -334,16 +337,18 @@ public final class BridgeController: ObservableObject {
         reconcileStatusStreams(fetched)
 
         let state = StatusMapper.aggregate(fetched, config)
-        // Macro and voice keys share ids, so the binding decides each key's
-        // light: configured text wins, the wide key falls back to voice.
-        let flexKeys = (Pad.macroKeyIDs + Pad.voiceKeyIDs).map { key -> OAI.Thread in
+        // Every key in this group has a role and a light of its own, and a
+        // configured string replaces both: a rebound key reads as a macro key.
+        let flexKeys = Pad.rebindableKeyIDs.map { key -> OAI.Thread in
             if keyBindings.text(for: key) != nil {
                 return StatusMapper.macroThread(id: key, config)
             }
-            if Pad.voiceKeyIDs.contains(key) {
+            switch key {
+            case Pad.newTabKeyID: return StatusMapper.newTabThread(config)
+            case Pad.voiceKeyID:
                 return StatusMapper.voiceThread(id: key, active: voiceActive, config)
+            default: return StatusMapper.systemKeyThread(id: key, config)
             }
-            return OAI.Thread(id: key, brightness: 0, effect: .off)
         }
         let threads = StatusMapper.threads(for: fetched, config)
             + [StatusMapper.stackThread(open: stackPanelOpen, config),
@@ -421,13 +426,17 @@ public final class BridgeController: ObservableObject {
             Task { await cycleTabs() }
         } else if index == Pad.landKeyID {
             onLandKey?()
-        } else if Pad.macroKeyIDs.contains(index) || Pad.voiceKeyIDs.contains(index) {
+        } else if Pad.rebindableKeyIDs.contains(index) {
             // A configured text macro wins over the key's built-in role, which
-            // is how the config file may repurpose the wide voice key.
+            // is how the config file may repurpose any of these four.
             if let text = keyBindings.text(for: index) {
                 Task { await injectPrompt(text) }
-            } else if Pad.voiceKeyIDs.contains(index) {
+            } else if index == Pad.voiceKeyID {
                 onVoiceKey?()
+            } else if index == Pad.newTabKeyID {
+                Task { await newTab() }
+            } else if let tap = SystemKeyTap.forKey(index) {
+                onSystemKey?(tap)
             }
         } else if index == Pad.dialUpID || index == Pad.dialDownID {
             onDial?(index == Pad.dialUpID ? 1 : -1)
@@ -471,6 +480,21 @@ public final class BridgeController: ObservableObject {
     public func cycleTabs() async {
         do {
             try await HerdrClient.cycleTabs()
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    /// Opens a fresh Herdr tab beside the focused agent, focuses it, and brings
+    /// the terminal forward — same reason `focusSlot` does: a tab you cannot see
+    /// is indistinguishable from a key that did nothing.
+    public func newTab() async {
+        do {
+            // A missing focus is not a failure: `createTabParams` falls back to
+            // Herdr's own defaults, and a dead socket surfaces on the create.
+            let focused = try? await HerdrClient.focusedAgent()
+            try await HerdrClient.createTab(beside: focused)
+            raiseTerminal()
         } catch {
             lastError = error.localizedDescription
         }

@@ -105,7 +105,7 @@ struct MenuPanelView: View {
         let isTabCycleKey = index == Pad.tabCycleKeyID
         let isLandKey = index == Pad.landKeyID
         let macroText = bridge.keyBindings.text(for: index)
-        let isVoiceKey = macroText == nil && Pad.voiceKeyIDs.contains(index)
+        let role: KeyRole? = macroText == nil ? KeyRole(key: index) : nil
         // Key index and agent slot are the same row-major ordering, but the
         // lookup still goes through the pad map so the panel and the pad can
         // never disagree about which key belongs to which agent.
@@ -121,8 +121,10 @@ struct MenuPanelView: View {
                 LandPanelController.shared.handleLandKey()
             } else if let macroText {
                 Task { await bridge.injectPrompt(macroText) }
-            } else if isVoiceKey {
+            } else if role == .voice {
                 VoiceController.shared.handleVoiceKey()
+            } else if role == .newTab {
+                Task { await bridge.newTab() }
             } else if let slot, agent != nil {
                 Task { await bridge.focusSlot(slot) }
             }
@@ -136,11 +138,37 @@ struct MenuPanelView: View {
                 )
         }
         .buttonStyle(.plain)
+        // Esc and Enter are the exception: clicking them would post the
+        // keystroke into this panel, which is not what anyone means by it.
         .disabled(agent == nil && !isStackKey && !isTabCycleKey && !isLandKey
-                  && macroText == nil && !isVoiceKey)
+                  && macroText == nil && role != .voice && role != .newTab)
         .help(helpText(index, agent: agent, isStackKey: isStackKey,
                        isTabCycleKey: isTabCycleKey, isLandKey: isLandKey,
-                       macroText: macroText, isVoiceKey: isVoiceKey))
+                       macroText: macroText, role: role))
+    }
+
+    /// What a key does when no config string has replaced it.
+    private enum KeyRole {
+        case esc, newTab, voice, enter
+
+        init?(key: Int) {
+            switch key {
+            case Pad.escKeyID: self = .esc
+            case Pad.newTabKeyID: self = .newTab
+            case Pad.voiceKeyID: self = .voice
+            case Pad.enterKeyID: self = .enter
+            default: return nil
+            }
+        }
+
+        var help: String {
+            switch self {
+            case .esc: return "Esc"
+            case .newTab: return "New Herdr tab, beside the focused agent"
+            case .voice: return "Right control — start or stop Monologue"
+            case .enter: return "Enter"
+            }
+        }
     }
 
     private func helpText(
@@ -150,13 +178,13 @@ struct MenuPanelView: View {
         isTabCycleKey: Bool,
         isLandKey: Bool,
         macroText: String?,
-        isVoiceKey: Bool
+        role: KeyRole?
     ) -> String {
         if isStackKey { return "GitButler stack for the focused agent" }
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
         if isLandKey { return "Land the focused agent's branches onto the target" }
         if let macroText { return "Type: \(macroText)" }
-        if isVoiceKey { return "Right command — start or stop Superwhisper" }
+        if let role { return role.help }
         if let agent { return "\(agent.shortName) — \(agent.status)" }
         return "Key \(index)"
     }

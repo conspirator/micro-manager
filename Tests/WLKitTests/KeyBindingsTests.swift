@@ -7,46 +7,48 @@ final class KeyBindingsTests: XCTestCase {
         KeyBindings.parse(Data(json.utf8))
     }
 
-    func testMissingFileMeansDefaults() {
+    /// Every key now has a built-in role, so nothing types text until the file
+    /// says so. A default here would silently replace Esc or Enter.
+    func testNoKeyTypesTextUntilConfigured() {
         let bindings = KeyBindings()
-        XCTAssertEqual(bindings.text(for: 9), "Open PRs for all active GitButler branches")
-        XCTAssertEqual(bindings.text(for: 12), "Run but pull")
-        XCTAssertNil(bindings.text(for: 10), "the wide key defaults to voice, not text")
+        for key in Pad.rebindableKeyIDs {
+            XCTAssertNil(bindings.text(for: key), "key \(key) has a role, not a default string")
+        }
+        XCTAssertTrue(KeyBindings.defaults.isEmpty)
+    }
+
+    /// A configured string replaces the key's role, and only on the keys the pad
+    /// routes through the binding — an agent key answers as an agent first.
+    func testTextIsOnlyHonouredOnTheRebindableKeys() {
+        let bindings = parse(#"{"keys": {"9": "Ship it", "0": "not an agent key"}}"#)
+        XCTAssertEqual(bindings.text(for: 9), "Ship it")
+        for key in Pad.agentKeyIDs + [Pad.stackKeyID, Pad.tabCycleKeyID, Pad.landKeyID] {
+            XCTAssertFalse(Pad.rebindableKeyIDs.contains(key),
+                           "key \(key) would lose its role to a stray config line")
+        }
+    }
+
+    func testEachKeyBindsOnItsOwn() {
+        let bindings = parse(#"{"keys": {"10": "new tab no more", "11": "quiet please"}}"#)
+        XCTAssertEqual(bindings.text(for: 10), "new tab no more")
+        XCTAssertEqual(bindings.text(for: 11), "quiet please")
+        XCTAssertNil(bindings.text(for: 12), "binding one key leaves its neighbour alone")
+    }
+
+    /// The wide-keycap alias named a cap that does not exist: row 3 is three
+    /// separate keys. It must not quietly bind two of them at once.
+    func testTheWideKeyAliasIsGone() {
+        let bindings = parse(#"{"keys": {"10+11": "Summarise your progress"}}"#)
+        XCTAssertNil(bindings.text(for: 10))
         XCTAssertNil(bindings.text(for: 11))
     }
 
-    /// The defaults are meaningless on a key the pad does not route to a macro,
-    /// so the two lists have to keep agreeing.
-    func testDefaultsSitOnTheMacroKeys() {
-        XCTAssertEqual(KeyBindings.defaults.keys.sorted(), Pad.macroKeyIDs.sorted())
-        XCTAssertFalse(Pad.macroKeyIDs.contains(Pad.landKeyID),
-                       "the land key answers before any macro on it would")
-    }
-
-    func testFileOverridesAKeyAndKeepsTheOtherDefault() {
-        let bindings = parse(#"{"keys": {"9": "Ship it"}}"#)
-        XCTAssertEqual(bindings.text(for: 9), "Ship it")
-        XCTAssertEqual(bindings.text(for: 12), "Run but pull")
-    }
-
-    /// "10+11" is the wide key spoken of as one: both halves get the string.
-    func testWideKeyBindsBothHalvesTogether() {
-        let bindings = parse(#"{"keys": {"10+11": "Summarise your progress"}}"#)
-        XCTAssertEqual(bindings.text(for: 10), "Summarise your progress")
-        XCTAssertEqual(bindings.text(for: 11), "Summarise your progress")
-    }
-
-    func testWideKeyHalvesCanDiffer() {
-        let bindings = parse(#"{"keys": {"10": "left half", "11": "right half"}}"#)
-        XCTAssertEqual(bindings.text(for: 10), "left half")
-        XCTAssertEqual(bindings.text(for: 11), "right half")
-    }
-
-    /// An empty string unbinds: the key goes dark rather than typing nothing.
-    func testEmptyStringUnbindsADefault() {
-        let bindings = parse(#"{"keys": {"12": ""}}"#)
+    /// An empty string unbinds: the key falls back to its role rather than
+    /// typing nothing.
+    func testEmptyStringUnbindsAKey() {
+        let bindings = parse(#"{"keys": {"12": "", "9": "Ship it"}}"#)
         XCTAssertNil(bindings.text(for: 12))
-        XCTAssertEqual(bindings.text(for: 9), "Open PRs for all active GitButler branches")
+        XCTAssertEqual(bindings.text(for: 9), "Ship it")
     }
 
     func testMalformedFileFallsBackToDefaults() {
@@ -64,8 +66,6 @@ final class KeyBindingsTests: XCTestCase {
         let bindings = parse(#"{"claude": {"models": ["opus", "sonnet"], "efforts": ["low", "high"]}}"#)
         XCTAssertEqual(bindings.claudeModels, ["opus", "sonnet"])
         XCTAssertEqual(bindings.claudeEfforts, ["low", "high"])
-        XCTAssertEqual(bindings.text(for: 9), "Open PRs for all active GitButler branches",
-                       "key defaults survive a claude-only config")
     }
 
     func testEmptyClaudeListsFallBackToDefaults() {
