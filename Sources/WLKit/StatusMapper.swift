@@ -46,9 +46,10 @@ public struct BridgeConfig: Sendable {
     public var newTabColor: Int = 0x00E5FF
     /// Esc and Enter: pale and unemphatic, because they are just keys.
     public var systemColor: Int = 0xCFD8DC
-    /// The land key pushes to the target, so it gets a colour with some weight
-    /// to it — distinct from blocked-red, which means "look", not "beware".
-    public var landColor: Int = 0xE91E63
+    /// The Tower key opens a repository and holds no state of its own, so it
+    /// takes a colour with some weight to it — distinct from blocked-red, which
+    /// means "look", not "beware".
+    public var towerColor: Int = 0xE91E63
     /// The voice key: white at rest, recording-red while a take is open.
     public var voiceColor: Int = 0xECEFF1
     public var voiceActiveColor: Int = 0xFF3B30
@@ -133,17 +134,15 @@ public enum StatusMapper {
         )
     }
 
-    /// The land key's thread — the stack key's pattern: dim while idle so a
-    /// bound key never reads as broken, breathing while its window is up.
-    public static func landThread(
-        open: Bool,
-        _ cfg: BridgeConfig = BridgeConfig()
-    ) -> OAI.Thread {
+    /// The Tower key's thread. Nothing to show but that it is bound, so it is
+    /// dim and solid like the tab-cycle and new-tab keys: a bound-but-dark key
+    /// reads as broken.
+    public static func towerThread(_ cfg: BridgeConfig = BridgeConfig()) -> OAI.Thread {
         OAI.Thread(
-            id: Pad.landKeyID,
-            color: cfg.landColor,
-            brightness: open ? cfg.brightness : cfg.brightness * 0.3,
-            effect: open ? .breath : .solid,
+            id: Pad.towerKeyID,
+            color: cfg.towerColor,
+            brightness: cfg.brightness * 0.3,
+            effect: .solid,
             speed: cfg.speed
         )
     }

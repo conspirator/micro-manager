@@ -39,8 +39,6 @@ public final class BridgeController: ObservableObject {
     /// Whether the GitButler stack is on screen. Only the key light cares —
     /// the panel itself lives in the app layer.
     @Published public private(set) var stackPanelOpen = false
-    /// Same for the land window.
-    @Published public private(set) var landPanelOpen = false
     /// Whether a Monologue take is open, for the voice key's light.
     @Published public private(set) var voiceActive = false
 
@@ -52,8 +50,9 @@ public final class BridgeController: ObservableObject {
     /// Called when the stack key is pressed. The bridge owns the key, the app
     /// owns the window, so this is where the two meet.
     public var onStackKey: (() -> Void)?
-    /// Called when the land key is pressed; same split as `onStackKey`.
-    public var onLandKey: (() -> Void)?
+    /// Called when the Tower key is pressed; same split as `onStackKey` — the
+    /// bridge owns the key, the app opens Tower.
+    public var onTowerKey: (() -> Void)?
     /// Called when the voice key is pressed.
     public var onVoiceKey: (() -> Void)?
     /// Called with the keystroke a key stands for — Esc, Enter. The bridge knows
@@ -64,8 +63,8 @@ public final class BridgeController: ObservableObject {
     /// Called when the joystick enters a cardinal sector.
     public var onJoystick: ((Pad.JoystickDirection) -> Void)?
     /// Consulted before any key does its normal job. Returning true consumes
-    /// the press — this is how a pending land confirmation turns every other
-    /// key into "cancel" without those keys also doing their usual work.
+    /// the press — this is how a modal window can turn every other key into
+    /// "cancel" without those keys also doing their usual work.
     public var onKeyIntercept: ((Int) -> Bool)?
 
     // MARK: - Internals
@@ -353,7 +352,7 @@ public final class BridgeController: ObservableObject {
         let threads = StatusMapper.threads(for: fetched, config)
             + [StatusMapper.stackThread(open: stackPanelOpen, config),
                StatusMapper.tabCycleThread(config),
-               StatusMapper.landThread(open: landPanelOpen, config)]
+               StatusMapper.towerThread(config)]
             + flexKeys
 
         // Fingerprint the whole rendered picture, not just the aggregate, so
@@ -424,8 +423,8 @@ public final class BridgeController: ObservableObject {
             onStackKey?()
         } else if index == Pad.tabCycleKeyID {
             Task { await cycleTabs() }
-        } else if index == Pad.landKeyID {
-            onLandKey?()
+        } else if index == Pad.towerKeyID {
+            onTowerKey?()
         } else if Pad.rebindableKeyIDs.contains(index) {
             // A configured text macro wins over the key's built-in role, which
             // is how the config file may repurpose any of these four.
@@ -505,13 +504,6 @@ public final class BridgeController: ObservableObject {
     public func setStackPanelOpen(_ open: Bool) async {
         guard stackPanelOpen != open else { return }
         stackPanelOpen = open
-        await forceRepaint()
-    }
-
-    /// Repaints the land key. Same contract as `setStackPanelOpen`.
-    public func setLandPanelOpen(_ open: Bool) async {
-        guard landPanelOpen != open else { return }
-        landPanelOpen = open
         await forceRepaint()
     }
 

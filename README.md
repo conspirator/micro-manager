@@ -54,7 +54,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | key | what it does |
 |---|---|
 | stack | floats the GitButler stack for the focused agent |
-| land | lands the focused agent's branches, bottom first |
+| tower | opens the focused agent's directory in Tower |
 | tabs | cycles the tabs of the focused Herdr window |
 | new tab | opens a Herdr tab beside the focused agent |
 

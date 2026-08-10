@@ -103,7 +103,7 @@ struct MenuPanelView: View {
         let isBound = Pad.boundKeyIDs.contains(index)
         let isStackKey = index == Pad.stackKeyID
         let isTabCycleKey = index == Pad.tabCycleKeyID
-        let isLandKey = index == Pad.landKeyID
+        let isTowerKey = index == Pad.towerKeyID
         let macroText = bridge.keyBindings.text(for: index)
         let role: KeyRole? = macroText == nil ? KeyRole(key: index) : nil
         // Key index and agent slot are the same row-major ordering, but the
@@ -117,8 +117,8 @@ struct MenuPanelView: View {
                 StackPanelController.shared.toggle()
             } else if isTabCycleKey {
                 Task { await bridge.cycleTabs() }
-            } else if isLandKey {
-                LandPanelController.shared.handleLandKey()
+            } else if isTowerKey {
+                Tower.launch { bridge.noteError($0) }
             } else if let macroText {
                 Task { await bridge.injectPrompt(macroText) }
             } else if role == .voice {
@@ -140,10 +140,10 @@ struct MenuPanelView: View {
         .buttonStyle(.plain)
         // Esc and Enter are the exception: clicking them would post the
         // keystroke into this panel, which is not what anyone means by it.
-        .disabled(agent == nil && !isStackKey && !isTabCycleKey && !isLandKey
+        .disabled(agent == nil && !isStackKey && !isTabCycleKey && !isTowerKey
                   && macroText == nil && role != .voice && role != .newTab)
         .help(helpText(index, agent: agent, isStackKey: isStackKey,
-                       isTabCycleKey: isTabCycleKey, isLandKey: isLandKey,
+                       isTabCycleKey: isTabCycleKey, isTowerKey: isTowerKey,
                        macroText: macroText, role: role))
     }
 
@@ -176,13 +176,13 @@ struct MenuPanelView: View {
         agent: HerdrAgent?,
         isStackKey: Bool,
         isTabCycleKey: Bool,
-        isLandKey: Bool,
+        isTowerKey: Bool,
         macroText: String?,
         role: KeyRole?
     ) -> String {
         if isStackKey { return "GitButler stack for the focused agent" }
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
-        if isLandKey { return "Land the focused agent's branches onto the target" }
+        if isTowerKey { return "Open the focused agent's directory in Tower" }
         if let macroText { return "Type: \(macroText)" }
         if let role { return role.help }
         if let agent { return "\(agent.shortName) — \(agent.status)" }

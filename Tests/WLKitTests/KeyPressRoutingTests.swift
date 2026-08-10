@@ -45,23 +45,24 @@ final class KeyPressRoutingTests: XCTestCase {
         let controller = bridge()
         var posted: [SystemKeyTap] = []
         var stackPresses = 0
-        var landPresses = 0
+        var towerPresses = 0
         controller.onSystemKey = { posted.append($0) }
         controller.onStackKey = { stackPresses += 1 }
-        controller.onLandKey = { landPresses += 1 }
+        controller.onTowerKey = { towerPresses += 1 }
 
         controller.handleKeyPress(Pad.stackKeyID)
-        controller.handleKeyPress(Pad.landKeyID)
+        controller.handleKeyPress(Pad.towerKeyID)
         for key in Pad.agentKeyIDs { controller.handleKeyPress(key) }
 
         XCTAssertEqual(stackPresses, 1)
-        XCTAssertEqual(landPresses, 1)
+        XCTAssertEqual(towerPresses, 1)
         XCTAssertTrue(posted.isEmpty)
     }
 
-    /// A land confirmation turns every other key into "cancel". That has to hold
-    /// for the new keys too, or an Esc meant to dismiss the window would be
-    /// posted at the terminal instead.
+    /// A modal window can claim every key while it is up, which turns the rest
+    /// of the pad into "cancel". That has to hold for the keys that synthesise
+    /// keystrokes too, or an Esc meant to dismiss the window would be posted at
+    /// the terminal instead.
     func testAPendingConfirmationSwallowsTheSystemKeys() {
         let controller = bridge()
         var posted: [SystemKeyTap] = []

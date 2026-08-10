@@ -118,7 +118,7 @@ final class StatusMapperTests: XCTestCase {
             XCTAssertEqual(Pad.agentSlot(for: key), slot)
         }
         XCTAssertNil(Pad.agentSlot(for: Pad.stackKeyID))
-        XCTAssertNil(Pad.agentSlot(for: Pad.landKeyID))
+        XCTAssertNil(Pad.agentSlot(for: Pad.towerKeyID))
     }
 
     // MARK: - AG key names
@@ -230,6 +230,22 @@ extension StatusMapperTests {
     func testTheNewTabKeyIsNotTheTabCycleKeysColour() {
         XCTAssertEqual(StatusMapper.newTabThread().id, Pad.newTabKeyID)
         XCTAssertNotEqual(StatusMapper.newTabThread().color, StatusMapper.tabCycleThread().color)
+    }
+
+    /// The Tower key has no state to show — it opens a repository and that is
+    /// all — so it sits dim and solid like the other stateless keys on its row.
+    /// Dim, not dark: the key is bound to `KV_OAI_AG*`, and a bound key that
+    /// never lights reads as broken hardware.
+    func testTheTowerKeyIsDimSolidAndNotItsNeighboursColour() {
+        let cfg = BridgeConfig()
+        let tower = StatusMapper.towerThread(cfg)
+
+        XCTAssertEqual(tower.id, Pad.towerKeyID)
+        XCTAssertEqual(tower.effect, .solid)
+        XCTAssertGreaterThan(tower.brightness ?? 0, 0, "a bound key that never lights reads as broken")
+        XCTAssertLessThan(tower.brightness ?? cfg.brightness, cfg.brightness)
+        XCTAssertNotEqual(tower.color, StatusMapper.tabCycleThread(cfg).color)
+        XCTAssertNotEqual(tower.color, StatusMapper.stackThread(open: false, cfg).color)
     }
 
     /// An open take is the one state on this row you need to see from across

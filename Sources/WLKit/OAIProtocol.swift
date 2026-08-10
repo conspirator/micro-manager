@@ -176,9 +176,14 @@ public enum Pad {
     /// Cycles the tabs of the focused tab's workspace in Herdr. Third key of
     /// row 3, next to the land key.
     public static let tabCycleKeyID = 8
-    /// Lands the focused agent's stack onto the target, bottom branch first.
-    /// Second key of row 3, next to the stack key.
-    public static let landKeyID = 7
+    /// Opens the focused agent's working directory in Tower. Second key of
+    /// row 3, next to the stack key.
+    ///
+    /// This was the land key. Land's own code is still here and still tested —
+    /// see `LandPanel` and `GitButler.landPlan` — it is only unwired from the
+    /// pad, so there is deliberately no second constant for position 7. Two
+    /// names for one key is how the panel and the pad start to disagree.
+    public static let towerKeyID = 7
     /// Taps Esc, wherever the focus is. First key of the bottom row.
     public static let escKeyID = 10
     /// Creates a Herdr tab beside the focused agent and lands in it. Last key
@@ -203,7 +208,7 @@ public enum Pad {
     /// The keys bound to `KV_OAI_AG*`, and so the only ones that can be lit.
     /// Every key on the pad now has a role, so this is all of them.
     public static let boundKeyIDs =
-        agentKeyIDs + [stackKeyID, tabCycleKeyID, landKeyID] + rebindableKeyIDs
+        agentKeyIDs + [stackKeyID, tabCycleKeyID, towerKeyID] + rebindableKeyIDs
 
     // MARK: Dial and joystick
 

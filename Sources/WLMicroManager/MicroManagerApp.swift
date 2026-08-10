@@ -28,11 +28,12 @@ struct MicroManagerApp: App {
                     }
                     bridge.onStackKey = { stack.toggle() }
 
-                    let land = LandPanelController.shared
-                    land.onVisibilityChange = { [weak bridge] open in
-                        Task { await bridge?.setLandPanelOpen(open) }
+                    // Key 7 opens the focused agent's directory in Tower. The
+                    // land flow that used to own this key is still in the repo,
+                    // in LandPanel and GitButler.landPlan; it is only unwired.
+                    bridge.onTowerKey = { [weak bridge] in
+                        Tower.launch { message in bridge?.noteError(message) }
                     }
-                    bridge.onLandKey = { land.handleLandKey() }
 
                     let voice = VoiceController.shared
                     voice.onActiveChange = { [weak bridge] active in
@@ -65,12 +66,6 @@ struct MicroManagerApp: App {
                     }
                     bridge.onDial = { step in tune.handleDial(step) }
                     bridge.onJoystick = { direction in tune.handleJoystick(direction) }
-                    // While a land confirmation is up, every key that is not
-                    // the land key means "cancel", nothing else.
-                    bridge.onKeyIntercept = { index in
-                        guard index != Pad.landKeyID else { return false }
-                        return land.handleOtherKey()
-                    }
 
                     // Choose the transport before starting: `useEmulator`
                     // rebuilds the device, so doing it after would tear down a

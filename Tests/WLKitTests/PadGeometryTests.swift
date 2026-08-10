@@ -17,12 +17,12 @@ final class PadGeometryTests: XCTestCase {
                        "no key may hold two roles")
     }
 
-    /// Row 3 reads stack, land, tabs, new tab; the bottom row starts with Esc.
+    /// Row 3 reads stack, tower, tabs, new tab; the bottom row starts with Esc.
     /// Pinned because every light and every press is addressed by these ids, so
     /// a swap that misses one place shows up as a key doing its neighbour's job.
     func testTheActionRowOrder() {
         XCTAssertEqual(Pad.stackKeyID, 6)
-        XCTAssertEqual(Pad.landKeyID, 7)
+        XCTAssertEqual(Pad.towerKeyID, 7)
         XCTAssertEqual(Pad.tabCycleKeyID, 8)
         XCTAssertEqual(Pad.newTabKeyID, 9)
         XCTAssertEqual(Pad.escKeyID, 10)
@@ -40,7 +40,7 @@ final class PadGeometryTests: XCTestCase {
             XCTAssertNil(Pad.agentSlot(for: key), "key \(key) would answer as an agent first")
             XCTAssertNotEqual(key, Pad.stackKeyID)
             XCTAssertNotEqual(key, Pad.tabCycleKeyID)
-            XCTAssertNotEqual(key, Pad.landKeyID)
+            XCTAssertNotEqual(key, Pad.towerKeyID)
         }
     }
 
