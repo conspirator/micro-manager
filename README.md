@@ -56,11 +56,23 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | stack | floats the GitButler stack for the focused agent |
 | tabs | cycles the tabs of the focused Herdr window |
 | land | lands the focused agent's branches, bottom first |
-| macro | types a configured string into the agent's prompt |
+| esc | taps Esc, wherever the focus is |
 
-**Row 4** is the wide key — it taps right command, which starts and stops
-Superwhisper — and one more
-macro key.
+**Row 4** is a new Herdr tab, the voice key — it taps right control, which
+starts and stops [Monologue](https://www.monologue.to) — and Enter.
+
+The new-tab key opens a tab beside the focused agent, in the directory that
+agent is working in, focuses it, and brings the terminal forward. Esc and Enter
+go to whatever holds focus and raise nothing: a keystroke that moved a window
+first would land somewhere you did not mean.
+
+The voice key sends **two** right-control taps to start a take and **one** to
+stop it, because that is how Monologue's hotkey works — two taps inside a second
+lock recording hands-free, one more tap ends it, and a lone tap from idle is
+discarded silently. The key breathes red while a take is open. Stopping a take
+from the keyboard instead makes that drift, and the next press puts it right.
+Both Esc/Enter and the voice key need **Accessibility** on top of Input
+Monitoring, since they synthesise key events.
 
 **The dial** tunes reasoning effort. **The joystick** switches model: it puts
 the model list on screen, north and south move, east confirms, west cancels.
@@ -139,16 +151,15 @@ Manager only — the Inspector is a separate process and still needs hardware.
 
 ## Configuration
 
-Everything works without a config file. To rebind the macro keys or change what
-the dial and joystick offer, drop a `config.json` into
-`~/.config/micromanager/`:
+Everything works without a config file. To replace what the four keys below the
+agent block do, or to change what the dial and joystick offer, drop a
+`config.json` into `~/.config/micromanager/`:
 
 ```json
 {
   "keys": {
-    "9":     "Open PRs for all active GitButler branches",
-    "12":    "Run but pull",
-    "10+11": "Summarise what you are working on"
+    "9":  "Open PRs for all active GitButler branches",
+    "12": "Run but pull"
   },
   "claude": { "models": ["fable", "opus"], "efforts": ["low", "high"] },
   "codex":  { "models": ["gpt-5.6-sol", "gpt-5.6-codex"] }
@@ -156,10 +167,10 @@ the dial and joystick offer, drop a `config.json` into
 ```
 
 A bound string is injected into the focused agent's prompt, unsubmitted — you
-still read it and press enter. `"10+11"` addresses the wide key as one; `"10"`
-and `"11"` address its halves. Keys the file does not mention keep their
-defaults, and an empty string unbinds a key outright. Binding the wide key to
-text replaces its right-command tap.
+still read it and press enter — **instead of** what that key normally does. Keys
+9 to 12 are the only ones that listen, since losing the key that focuses an
+agent to a stray config line would be a poor trade. There are no defaults: every
+key has a role, and an empty string returns a key to it.
 
 `codex.models` is your copy of what Codex's own `/model` menu offers, in its
 order — the joystick steers that menu rather than owning it, so there is nothing

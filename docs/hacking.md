@@ -387,9 +387,9 @@ number.
  │   2  │   3  │   4  │   5  │   row 1
  ├──────┼──────┼──────┼──────┤
  │   6  │   7  │   8  │   9  │   row 2
- ├──────┴──────┼──────┴──────┤
- │    10 + 11  │     12      │   row 3
- └─────────────┴─────────────┘
+ ├──────┼──────┼──────┼──────┤
+ │ bow  │  10  │  11  │  12  │   row 3
+ └──────┴──────┴──────┴──────┘
 ```
 
 > An earlier version of this guide claimed the top row was wired right to left,
@@ -397,9 +397,14 @@ number.
 > the pad lit its **second** key and left the first dark. Trust the walk in
 > [§8](#prove-it-with-a-walk) over any diagram, including this one.
 
-Rows 1–3 run left to right in index order too. Matrix positions 10 and 11 sit
-under one wide keycap — the stock map leaves 11 as `KC_NONE`; bind and light
-both if you want the whole cap to glow evenly.
+Rows 1–3 run left to right in index order too. Row 3 has **three keys**, not a
+wide cap and a small one: the pad's keymap carries three codes there, `ACT10`,
+`ACT11`, `ACT12`, and each answers on its own. The row starts one column in,
+where the case has a bowtie silkscreened instead of a switch.
+
+> This guide used to say positions 10 and 11 sat under one keycap and advised
+> binding both to the same thing. The app did exactly that, and one of its four
+> action keys was unreachable as itself until the keymap was read.
 
 ---
 

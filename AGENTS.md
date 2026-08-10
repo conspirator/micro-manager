@@ -40,6 +40,28 @@ so the app heals this itself *provided the keymap read succeeds*.
 If a pad ever looks dead from the action row down, read the keymap before
 anything else.
 
+Row 3 having **three** codes is also the answer to a question the code used to
+get wrong: matrix positions 10 and 11 are two keys, not one wide keycap. The app
+bound both to the voice action for a while, which cost a key.
+
+## The bottom row posts real keystrokes
+
+Keys 9, 11 and 12 synthesise key events, so they need **Accessibility** as well
+as Input Monitoring, and both grants are keyed to the code signature.
+
+Do not test them by posting into the terminal you are working in. An `Esc` from
+a test script killed the agent session that launched it — which is also the
+quickest proof the mechanism works. Use an inert key code (F16, `0x6A`) and a
+listen-only `CGEvent.tapCreate` to count what actually landed.
+
+Key 11 taps right control for Monologue, and start and stop are **different
+gestures**: two taps inside 1s lock a recording hands-free, one further tap ends
+it, and a lone tap from idle is discarded in silence. The rules are in
+`Monologue.app/Contents/Resources/HOTKEY_RECORDING_BEHAVIOR.md`, and its binary
+logs the state machine (`idle -> pressAndHold -> doubleTapLock -> idle`) if you
+need to watch it. That silent discard is what makes the light's state safe: when
+it drifts, the wasted press is the one Monologue throws away anyway.
+
 ## Open problems
 
 1. **`isAgentKeymapApplied` over-verifies.** This pad's joystick is
@@ -51,10 +73,10 @@ anything else.
    only what the layer actually has, mirroring what `withAgentKeymap` writes.
 2. **`cycleTabs()` and `injectPrompt()` never call `raiseTerminal()`.**
    `focusSlot()` does, deliberately — "an agent key pressed from a browser used
-   to move a cursor you could not see". The tab-cycle and macro keys have the
-   same problem and never got the same treatment: the action fires, Herdr
-   accepts it, and nothing visible happens because the terminal stays behind
-   whatever window is in front.
+   to move a cursor you could not see". `newTab()` does too, for the same
+   reason. The tab-cycle and macro keys never got the same treatment: the action
+   fires, Herdr accepts it, and nothing visible happens because the terminal
+   stays behind whatever window is in front.
 3. **Reassembly is quadratic.** `drainRPC` rescans the buffer for a complete
    object on every chunk: 11 KB parses in 0.06s, 256 KB takes 29s. Fine for a
    keymap, not fine for anything larger.
@@ -99,6 +121,11 @@ anything else.
   evidence than any UI. `tab.focus` is logged with `changes_ui=true`.
 - **Talk to Herdr directly** to separate its behaviour from the app's:
   `echo '{"id":"x","method":"tab.list","params":{}}' | nc -U ~/.config/herdr/herdr.sock`
+  A bogus method name is the cheapest way to get the **full method list** — the
+  `invalid_request` error names every variant it expected. That is how
+  `tab.create` and its `workspace_id`/`cwd`/`label`/`focus` params were found;
+  `herdr tab create --help` confirms them. It returns the tab **unfocused**
+  unless you pass `focus`.
 - **Count raw reports** to tell "nothing arrives" from "arrives but never
   parses": set `WLDevice.onRawReport`, sum `bytes[offset + 1]` accepting both
   alignments (the stack includes the report id, so a frame reads
