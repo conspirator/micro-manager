@@ -59,6 +59,19 @@ public final class WLDevice {
         case timeout(String)
         case rpc(String, String)
 
+        /// True when the open was refused by privacy policy rather than by the
+        /// device, so the caller can offer the grant instead of a hex code.
+        ///
+        /// macOS has answered with both codes: `kIOReturnNotPrivileged`
+        /// (0xE00002C1) on older systems, `kIOReturnNotPermitted` (0xE00002E2)
+        /// on macOS 15. Recognising only the first is why a denied pad reported
+        /// `IOHIDDeviceOpen failed (0xE00002E2)` and looked like broken
+        /// hardware — the one failure mode this app most needs to name.
+        public var isPermissionDenied: Bool {
+            guard case .openFailed(let result) = self else { return false }
+            return result == kIOReturnNotPrivileged || result == kIOReturnNotPermitted
+        }
+
         public var errorDescription: String? {
             switch self {
             case .notFound:
@@ -66,10 +79,11 @@ public final class WLDevice {
             case .noVendorCollection:
                 return "Found the device, but not its vendor collection (usage page 0xFF00). Nothing to talk to."
             case .openFailed(let r):
-                if r == kIOReturnNotPrivileged || UInt32(bitPattern: r) == 0xE00002C1 {
-                    return "Open refused (0xE00002C1). Grant Input Monitoring to the process running this app, under System Settings → Privacy & Security → Input Monitoring."
+                let code = String(format: "0x%08X", UInt32(bitPattern: r))
+                if isPermissionDenied {
+                    return "Open refused (\(code)). Grant Input Monitoring to the process running this app, under System Settings → Privacy & Security → Input Monitoring. A reinstall or a change of signing identity revokes it."
                 }
-                return String(format: "IOHIDDeviceOpen failed (0x%08X)", UInt32(bitPattern: r))
+                return "IOHIDDeviceOpen failed (\(code))"
             case .notConnected:
                 return "Not connected."
             case .writeFailed(let r):

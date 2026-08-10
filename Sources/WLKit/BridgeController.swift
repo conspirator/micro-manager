@@ -194,7 +194,9 @@ public final class BridgeController: ObservableObject {
         } catch {
             deviceConnected = false
             let message = error.localizedDescription
-            if message.contains("0xE00002C1") || message.contains("Input Monitoring") {
+            // Ask the error, not its prose: matching on the text missed
+            // 0xE00002E2 entirely and left the permission UI dark.
+            if (error as? WLDevice.Failure)?.isPermissionDenied == true {
                 permissionDenied = true
                 if !warnedPermission { warnedPermission = true; lastError = message }
             } else {
