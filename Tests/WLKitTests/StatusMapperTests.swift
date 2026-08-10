@@ -47,9 +47,11 @@ final class StatusMapperTests: XCTestCase {
             agent("working"), agent("blocked"), agent("idle"),
         ])
         XCTAssertEqual(threads.count, 6, "one entry per agent key")
-        // The pad's top row is wired right to left, so reading order starts
-        // at key 1: the first agent lights the top-LEFT key.
-        XCTAssertEqual(threads.map(\.id), [1, 0, 2, 3, 4, 5], "keys in reading order")
+        // Key index is row-major from the top LEFT, and a key's thread id is
+        // the same number its AG keycode reports, so slot N is simply key N.
+        // An earlier version reversed the top row and lit the first agent on
+        // the second key while the first key stayed dark.
+        XCTAssertEqual(threads.map(\.id), [0, 1, 2, 3, 4, 5], "keys in reading order")
         XCTAssertEqual(threads[0].color, 0xFFA000)
         XCTAssertEqual(threads[1].color, 0xFF2D2D)
         XCTAssertEqual(threads[2].color, 0x00C853)

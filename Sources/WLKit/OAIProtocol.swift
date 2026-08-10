@@ -152,18 +152,19 @@ public enum Pad {
     /// when turning everything off, not just the visible keys.
     public static let maxThreadID = 19
     /// Agent slot N lights and answers to `agentKeyIDs[N]`, in READING order:
-    /// left to right, top to bottom as you look at the pad. The firmware's top
-    /// row is wired right to left — key 0 is the top-RIGHT key — so reading
-    /// order starts 1, 0. The other rows run left to right in index order.
-    public static let agentKeyIDs = [1, 0, 2, 3, 4, 5]
-    /// The rows as you look at the pad, for on-screen mirrors. `rows` stays in
-    /// firmware order because the keymap file is addressed that way.
-    public static let displayRows: [[Int]] = [
-        [1, 0],
-        [2, 3, 4, 5],
-        [6, 7, 8, 9],
-        [10, 11, 12],
-    ]
+    /// left to right, top to bottom as you look at the pad. Key index is plain
+    /// row-major from the top-LEFT key, and a key's thread id is the same
+    /// number its `KV_OAI_AG*` keycode reports, so lighting and presses share
+    /// one index and slot N is simply key N.
+    ///
+    /// This was once `[1, 0, 2, 3, 4, 5]`, on the belief that the top row is
+    /// wired right to left. It is not: with a single agent the pad lit its
+    /// second key and left the first dark.
+    public static let agentKeyIDs = [0, 1, 2, 3, 4, 5]
+    /// The rows as you look at the pad, for on-screen mirrors. Identical to
+    /// `rows` — nothing is mirrored — and kept as its own name so a mirror can
+    /// never silently start addressing the keymap.
+    public static let displayRows: [[Int]] = rows
 
     /// The agent slot a key answers for, or nil for non-agent keys.
     public static func agentSlot(for key: Int) -> Int? {

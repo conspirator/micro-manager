@@ -375,13 +375,14 @@ to take a whole row's keycodes with it.
 
 ### Geometry
 
-The matrix is `[2, 4, 4, 3]` and the key index runs row-major from 0. One
-surprise: **the top row is wired right to left**, so index 0 is the top-**right**
-key.
+The matrix is `[2, 4, 4, 3]` and the key index runs row-major from 0, starting
+at the top-**left** key. Nothing is mirrored: a key's thread id, its
+`KV_OAI_AG*` keycode and its position in the keymap array are all the same
+number.
 
 ```
  ┌─────────────┬─────────────┐
- │      1      │      0      │   row 0   <- reversed: 0 is on the RIGHT
+ │      0      │      1      │   row 0
  ├──────┬──────┼──────┬──────┤
  │   2  │   3  │   4  │   5  │   row 1
  ├──────┼──────┼──────┼──────┤
@@ -391,9 +392,14 @@ key.
  └─────────────┴─────────────┘
 ```
 
-Rows 1–3 run left to right in index order. Matrix positions 10 and 11 sit under
-one wide keycap — the stock map leaves 11 as `KC_NONE`; bind and light both if
-you want the whole cap to glow evenly.
+> An earlier version of this guide claimed the top row was wired right to left,
+> and the app reversed keys 0 and 1 to match. It is not: with one agent running,
+> the pad lit its **second** key and left the first dark. Trust the walk in
+> [§8](#prove-it-with-a-walk) over any diagram, including this one.
+
+Rows 1–3 run left to right in index order too. Matrix positions 10 and 11 sit
+under one wide keycap — the stock map leaves 11 as `KC_NONE`; bind and light
+both if you want the whole cap to glow evenly.
 
 ---
 
