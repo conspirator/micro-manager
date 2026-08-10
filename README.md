@@ -47,7 +47,7 @@ readable from across the room.
 Pressing an agent key focuses that agent in Herdr **and brings the terminal
 forward** — Herdr selects the pane but leaves the window where it was, so an
 agent key pressed from a browser used to move a cursor you could not see. Set
-`WL_TERMINAL_BUNDLE_ID` if your panes do not live in Ghostty.
+`WL_TERMINAL_BUNDLE_ID` if your panes do not live in iTerm2.
 
 **Row 3** is actions:
 
@@ -167,7 +167,7 @@ to read it from.
 
 | variable | what it overrides |
 |---|---|
-| `WL_TERMINAL_BUNDLE_ID` | the terminal to raise (default Ghostty) |
+| `WL_TERMINAL_BUNDLE_ID` | the terminal to raise (default iTerm2) |
 | `WL_BUT_PATH` | the GitButler binary, skipping the search |
 | `HERDR_SOCKET_PATH` | the Herdr socket |
 | `WL_SIGN_IDENTITY` | the signing identity `bundle.sh` uses |

@@ -510,8 +510,8 @@ public final class BridgeController: ObservableObject {
     }
 
     /// The app Herdr's panes live in. Override with `WL_TERMINAL_BUNDLE_ID` if
-    /// they live somewhere other than Ghostty.
-    public static let defaultTerminalBundleID = "com.mitchellh.ghostty"
+    /// they live somewhere other than iTerm2.
+    public static let defaultTerminalBundleID = "com.googlecode.iterm2"
 
     /// Brings the terminal forward unless it is already the active app.
     ///
