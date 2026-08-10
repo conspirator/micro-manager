@@ -62,7 +62,7 @@ CARD = """<!doctype html>
     <p class="sub">__SUB__</p>
     <div class="foot">
       <span class="dots"><i style="background:#FF2D2D"></i><i style="background:#FFA000"></i>
-        <i style="background:#00B0FF"></i><i style="background:#00C853"></i></span>
+        <i style="background:#00C853"></i><i style="background:#00B0FF"></i></span>
       <span>__URL__</span>
     </div>
   </div>

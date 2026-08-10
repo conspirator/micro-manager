@@ -18,10 +18,14 @@ public struct BridgeConfig: Sendable {
         // Herdr reports "done" for an agent that has finished and that you
         // have not looked at yet, and "idle" once it is focused. That is a
         // real difference - one is waiting to be read, the other is just
-        // quiet - so give them different colours.
-        "done": 0x00B0FF,
-        "idle": 0x00C853,
-        "unknown": 0x00C853,
+        // quiet - so give them different colours. Green is the finished one,
+        // because green is what you look for when you are waiting on work;
+        // blue is the quiet one.
+        "done": 0x00C853,
+        "idle": 0x00B0FF,
+        // An unreadable status is quiet, not finished: borrowing green would
+        // make an unreachable Herdr look like a row of completed work.
+        "unknown": 0x00B0FF,
     ]
     public var effects: [String: OAI.Effect] = [
         "blocked": .breath,

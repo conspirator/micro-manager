@@ -32,8 +32,8 @@ enum Cell {
 // then the stack, tab-cycle and land keys in their own colours. Row order is
 // top to bottom as you look at the device.
 let grid: [[Cell]] = [
-    [.key(0x00C853), .key(0xFFA000), .knob, .knob],
-    [.key(0x00B0FF), .key(0x00C853), .key(0xFFA000), .key(0xFF2D2D)],
+    [.key(0x00B0FF), .key(0xFFA000), .knob, .knob],
+    [.key(0x00C853), .key(0x00B0FF), .key(0xFFA000), .key(0xFF2D2D)],
     [.key(0x7C4DFF), .key(0x00BFA5), .dark, .key(0xE91E63)],
     [.empty, .dark, .dark, .dark],
 ]

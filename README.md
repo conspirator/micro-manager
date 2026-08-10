@@ -37,10 +37,10 @@ running — green all idle, amber something working, red something needs you —
 and a badge when the pad is missing or permission is denied.
 
 **The top six keys** are one agent each, in the order Herdr's own panel lists
-them. Colours are red (blocked, breathing), amber (working), blue (done —
-finished but not yet looked at) and green (idle — finished and seen). Herdr
-distinguishes done from idle by whether you have focused the pane yet, so blue
-means something is waiting to be read and green means quiet. The **underglow**
+them. Colours are red (blocked, breathing), amber (working), green (done —
+finished but not yet looked at) and blue (idle — finished and seen). Herdr
+distinguishes done from idle by whether you have focused the pane yet, so green
+means something is waiting to be read and blue means quiet. The **underglow**
 carries the worst state across all agents, so "does anything need me?" is
 readable from across the room.
 

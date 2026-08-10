@@ -54,7 +54,7 @@ final class StatusMapperTests: XCTestCase {
         XCTAssertEqual(threads.map(\.id), [0, 1, 2, 3, 4, 5], "keys in reading order")
         XCTAssertEqual(threads[0].color, 0xFFA000)
         XCTAssertEqual(threads[1].color, 0xFF2D2D)
-        XCTAssertEqual(threads[2].color, 0x00C853)
+        XCTAssertEqual(threads[2].color, 0x00B0FF)
     }
 
     func testKeysWithNoAgentAreSwitchedOffNotLeftStale() {
@@ -145,8 +145,8 @@ extension StatusMapperTests {
             cfg.color(for: "idle"),
             "a finished-but-unread agent must be distinguishable from a quiet one"
         )
-        XCTAssertEqual(cfg.color(for: "idle"), 0x00C853)
-        XCTAssertEqual(cfg.color(for: "done"), 0x00B0FF)
+        XCTAssertEqual(cfg.color(for: "idle"), 0x00B0FF)
+        XCTAssertEqual(cfg.color(for: "done"), 0x00C853)
     }
 
     func testAttentionStatesAllHaveDistinctColours() {
@@ -164,8 +164,8 @@ extension StatusMapperTests {
             HerdrAgent(status: "done", paneID: "w1:p1"),
             HerdrAgent(status: "idle", paneID: "w1:p2"),
         ])
-        XCTAssertEqual(threads[0].color, 0x00B0FF)
-        XCTAssertEqual(threads[1].color, 0x00C853)
+        XCTAssertEqual(threads[0].color, 0x00C853)
+        XCTAssertEqual(threads[1].color, 0x00B0FF)
     }
 
     /// Pins every status colour. These are the whole point of the pad — a
@@ -175,9 +175,22 @@ extension StatusMapperTests {
         let cfg = BridgeConfig()
         XCTAssertEqual(cfg.color(for: "blocked"), 0xFF2D2D)
         XCTAssertEqual(cfg.color(for: "working"), 0xFFA000)
-        XCTAssertEqual(cfg.color(for: "done"), 0x00B0FF)
-        XCTAssertEqual(cfg.color(for: "idle"), 0x00C853)
-        XCTAssertEqual(cfg.color(for: "unknown"), 0x00C853)
+        XCTAssertEqual(cfg.color(for: "done"), 0x00C853)
+        XCTAssertEqual(cfg.color(for: "idle"), 0x00B0FF)
+        XCTAssertEqual(cfg.color(for: "unknown"), 0x00B0FF)
+    }
+
+    /// Green is the one colour that means "finished, go and read it". A status
+    /// the app could not read is not that, so it must not borrow the colour —
+    /// otherwise an unreachable Herdr looks like a row of completed work.
+    func testUnknownDoesNotLookFinished() {
+        let cfg = BridgeConfig()
+        XCTAssertNotEqual(cfg.color(for: "unknown"), cfg.color(for: "done"))
+        XCTAssertEqual(
+            cfg.color(for: "unknown"),
+            cfg.color(for: "idle"),
+            "unknown reads as quiet, which is the safe assumption"
+        )
     }
 }
 

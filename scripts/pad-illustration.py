@@ -97,7 +97,7 @@ def shade(hex_colour, factor):
 # ---------------------------------------------------------------- the pad
 
 # Colours the app really drives (BridgeConfig).
-BLOCKED, WORKING, DONE, IDLE = "#FF2D2D", "#FFA000", "#00B0FF", "#00C853"
+BLOCKED, WORKING, DONE, IDLE = "#FF2D2D", "#FFA000", "#00C853", "#00B0FF"
 VOICE, MACRO = "#ECEFF1", "#90A4AE"
 BOWTIE = "#9AA3B2"   # silkscreened on the case, not a lit key
 DARKCAP = "#23262E"
