@@ -105,8 +105,18 @@ public enum KeymapManager {
         return layer["layout"] as? [String: Any]
     }
 
-    /// True when every managed key, the dial and the joystick's cardinal
-    /// sectors carry their AG codes on the active layer.
+    /// True when every managed key and the dial carry their AG codes on the
+    /// active layer, and every joystick sector that *exists* carries the code
+    /// for its direction.
+    ///
+    /// This must mirror `withAgentKeymap` exactly. It did not: the writer
+    /// rewrites only the sectors already in the list, while this demanded all
+    /// four cardinal codes be present. A pad whose joystick is `type: VENDOR`
+    /// with `sectors: []` — which is what the Codex Micro reports — could never
+    /// satisfy that, so `apply()` wrote the keymap and then threw
+    /// `notAccepted`, the panel showed an error about a keymap that was in fact
+    /// correct, and the early return in `apply()` never fired, spending a flash
+    /// write on every single bridge start.
     public static func isAgentKeymapApplied(_ config: [String: Any]) -> Bool {
         guard let keymap = activeLayerKeymap(config) else { return false }
         for binding in bindings {
@@ -124,15 +134,16 @@ public enum KeymapManager {
         }
         if let joystick = layout["joystick"] as? [String: Any],
            let sectors = joystick["sectors"] as? [[String: Any]] {
-            for (centre, code) in joystickCodes {
-                let bound = sectors.contains { sector in
-                    guard let a1 = sector["a1"] as? Double,
-                          let a2 = sector["a2"] as? Double
-                    else { return false }
-                    return abs(sectorCentre(a1, a2) - centre) < 0.01
-                        && sector["k"] as? String == code
-                }
-                if !bound { return false }
+            // Ask of each sector present what the writer would have given it.
+            // An empty list has nothing to bind and so is already satisfied.
+            for sector in sectors {
+                guard let a1 = sector["a1"] as? Double,
+                      let a2 = sector["a2"] as? Double
+                else { continue }
+                let centre = sectorCentre(a1, a2)
+                guard let match = joystickCodes.first(where: { abs($0.centre - centre) < 0.01 })
+                else { continue }   // a diagonal, which the writer leaves alone
+                if sector["k"] as? String != match.code { return false }
             }
         }
         return true

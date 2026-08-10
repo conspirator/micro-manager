@@ -133,3 +133,83 @@ final class KeymapManagerTests: XCTestCase {
         XCTAssertFalse(KeymapManager.isAgentKeymapApplied([:]))
     }
 }
+
+// MARK: - Verification must mirror the write
+
+extension KeymapManagerTests {
+
+    /// This pad's joystick is `type: VENDOR` with an empty `sectors` list.
+    /// `withAgentKeymap` rewrites only the sectors that exist, so an empty list
+    /// means nothing to write — but the check demanded all four cardinal codes
+    /// be present, which no empty list can satisfy. The two disagreed forever:
+    /// `apply()` wrote the keymap, then reported `notAccepted`, and because the
+    /// early return could never fire it rewrote flash on every single start.
+    func testAnEmptyJoystickSectorListIsAlreadySatisfied() throws {
+        var config = try backupKeymap()
+        config = try KeymapManager.withAgentKeymap(config)
+        config = try emptyingJoystickSectors(config)
+
+        XCTAssertTrue(
+            KeymapManager.isAgentKeymapApplied(config),
+            "a joystick with no sectors has nothing left to bind"
+        )
+    }
+
+    /// The point of the fix: a second apply must be a no-op, so a bridge restart
+    /// does not spend a flash write proving what it already knows.
+    func testApplyingIsIdempotentOnAPadWithNoJoystickSectors() throws {
+        var config = try backupKeymap()
+        config = try emptyingJoystickSectors(config)
+        XCTAssertFalse(KeymapManager.isAgentKeymapApplied(config), "stock map still needs binding")
+
+        let next = try KeymapManager.withAgentKeymap(config)
+        XCTAssertTrue(KeymapManager.isAgentKeymapApplied(next),
+                      "what the writer produces, the checker must accept")
+    }
+
+    /// A sector that *is* present and carries the wrong code still fails, or the
+    /// check would wave through a joystick that steers nothing.
+    func testAWrongSectorCodeIsStillCaught() throws {
+        var config = try KeymapManager.withAgentKeymap(try backupKeymap())
+        var layout = try XCTUnwrap(KeymapManager.activeLayerLayout(config))
+        var joystick = try XCTUnwrap(layout["joystick"] as? [String: Any])
+        var sectors = try XCTUnwrap(joystick["sectors"] as? [[String: Any]])
+        try XCTSkipIf(sectors.isEmpty, "fixture has no sectors to corrupt")
+
+        sectors[0]["k"] = "KC_NONE"
+        joystick["sectors"] = sectors
+        layout["joystick"] = joystick
+        config = replacingLayout(config, with: layout)
+
+        XCTAssertFalse(KeymapManager.isAgentKeymapApplied(config))
+    }
+
+    // MARK: helpers
+
+    private func emptyingJoystickSectors(_ config: [String: Any]) throws -> [String: Any] {
+        var layout = try XCTUnwrap(KeymapManager.activeLayerLayout(config))
+        layout["joystick"] = ["type": "VENDOR", "sectors": [[String: Any]]()]
+        return replacingLayout(config, with: layout)
+    }
+
+    private func replacingLayout(
+        _ config: [String: Any],
+        with layout: [String: Any]
+    ) -> [String: Any] {
+        var next = config
+        let index = next["activeProfileId"] as? Int ?? 0
+        guard var profiles = next["profiles"] as? [[String: Any]], !profiles.isEmpty
+        else { return next }
+        let profileIndex = index < profiles.count ? index : 0
+        var profile = profiles[profileIndex]
+        guard var layers = profile["layers"] as? [[String: Any]], !layers.isEmpty
+        else { return next }
+        var layer = layers[0]
+        layer["layout"] = layout
+        layers[0] = layer
+        profile["layers"] = layers
+        profiles[profileIndex] = profile
+        next["profiles"] = profiles
+        return next
+    }
+}
