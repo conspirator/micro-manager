@@ -101,7 +101,7 @@ struct MenuPanelView: View {
     private func keyView(_ index: Int) -> some View {
         let color = bridge.keyColors[index]
         let isBound = Pad.boundKeyIDs.contains(index)
-        let isStackKey = index == Pad.stackKeyID
+        let isOpenWithKey = index == Pad.openWithKeyID
         let isTabCycleKey = index == Pad.tabCycleKeyID
         let isTowerKey = index == Pad.towerKeyID
         let macroText = bridge.keyBindings.text(for: index)
@@ -113,8 +113,8 @@ struct MenuPanelView: View {
         let agent = slot.flatMap { $0 < bridge.agents.count ? bridge.agents[$0] : nil }
 
         return Button {
-            if isStackKey {
-                StackPanelController.shared.toggle()
+            if isOpenWithKey {
+                OpenWithPanelController.shared.handleKey()
             } else if isTabCycleKey {
                 Task { await bridge.cycleTabs() }
             } else if isTowerKey {
@@ -140,9 +140,9 @@ struct MenuPanelView: View {
         .buttonStyle(.plain)
         // Esc and Enter are the exception: clicking them would post the
         // keystroke into this panel, which is not what anyone means by it.
-        .disabled(agent == nil && !isStackKey && !isTabCycleKey && !isTowerKey
+        .disabled(agent == nil && !isOpenWithKey && !isTabCycleKey && !isTowerKey
                   && macroText == nil && role != .voice && role != .newTab)
-        .help(helpText(index, agent: agent, isStackKey: isStackKey,
+        .help(helpText(index, agent: agent, isOpenWithKey: isOpenWithKey,
                        isTabCycleKey: isTabCycleKey, isTowerKey: isTowerKey,
                        macroText: macroText, role: role))
     }
@@ -174,13 +174,13 @@ struct MenuPanelView: View {
     private func helpText(
         _ index: Int,
         agent: HerdrAgent?,
-        isStackKey: Bool,
+        isOpenWithKey: Bool,
         isTabCycleKey: Bool,
         isTowerKey: Bool,
         macroText: String?,
         role: KeyRole?
     ) -> String {
-        if isStackKey { return "GitButler stack for the focused agent" }
+        if isOpenWithKey { return "Open the focused agent's directory in Finder, Zed or Tower" }
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
         if isTowerKey { return "Open the focused agent's directory in Tower" }
         if let macroText { return "Type: \(macroText)" }

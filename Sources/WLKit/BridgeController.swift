@@ -36,9 +36,9 @@ public final class BridgeController: ObservableObject {
     /// receive its replies too, so a response id we never issued is a reliable
     /// tell.
     @Published public private(set) var contendingClient = false
-    /// Whether the GitButler stack is on screen. Only the key light cares —
+    /// Whether the open-with strip is on screen. Only the key light cares —
     /// the panel itself lives in the app layer.
-    @Published public private(set) var stackPanelOpen = false
+    @Published public private(set) var openWithPanelOpen = false
     /// Whether a Monologue take is open, for the voice key's light.
     @Published public private(set) var voiceActive = false
 
@@ -47,10 +47,10 @@ public final class BridgeController: ObservableObject {
     /// config edit only needs an off/on toggle, not a relaunch.
     public private(set) var keyBindings = KeyBindings.load()
 
-    /// Called when the stack key is pressed. The bridge owns the key, the app
-    /// owns the window, so this is where the two meet.
-    public var onStackKey: (() -> Void)?
-    /// Called when the Tower key is pressed; same split as `onStackKey` — the
+    /// Called when the open-with key is pressed. The bridge owns the key, the
+    /// app owns the window, so this is where the two meet.
+    public var onOpenWithKey: (() -> Void)?
+    /// Called when the Tower key is pressed; same split as `onOpenWithKey` — the
     /// bridge owns the key, the app opens Tower.
     public var onTowerKey: (() -> Void)?
     /// Called when the voice key is pressed.
@@ -235,7 +235,7 @@ public final class BridgeController: ObservableObject {
                 let cfg = try await KeymapManager.read(device)
                 keymapReady = KeymapManager.isAgentKeymapApplied(cfg)
                 if !keymapReady {
-                    lastError = "The agent keys and the stack key are not bound to KV_OAI_AG00..AG06, so per-key colours will do nothing."
+                    lastError = "The agent keys and the open-with key are not bound to KV_OAI_AG00..AG06, so per-key colours will do nothing."
                 }
             }
         } catch {
@@ -350,7 +350,7 @@ public final class BridgeController: ObservableObject {
             }
         }
         let threads = StatusMapper.threads(for: fetched, config)
-            + [StatusMapper.stackThread(open: stackPanelOpen, config),
+            + [StatusMapper.openWithThread(open: openWithPanelOpen, config),
                StatusMapper.tabCycleThread(config),
                StatusMapper.towerThread(config)]
             + flexKeys
@@ -419,8 +419,8 @@ public final class BridgeController: ObservableObject {
     /// has to agree with `Pad`, so keep the dispatch in a single switch.
     public func handleKeyPress(_ index: Int) {
         if onKeyIntercept?(index) == true { return }
-        if index == Pad.stackKeyID {
-            onStackKey?()
+        if index == Pad.openWithKeyID {
+            onOpenWithKey?()
         } else if index == Pad.tabCycleKeyID {
             Task { await cycleTabs() }
         } else if index == Pad.towerKeyID {
@@ -462,7 +462,7 @@ public final class BridgeController: ObservableObject {
         }
     }
 
-    /// Repaints the voice key. Same contract as `setStackPanelOpen`.
+    /// Repaints the voice key. Same contract as `setOpenWithPanelOpen`.
     public func setVoiceActive(_ active: Bool) async {
         guard voiceActive != active else { return }
         voiceActive = active
@@ -499,11 +499,11 @@ public final class BridgeController: ObservableObject {
         }
     }
 
-    /// Repaints the stack key. Called by the app when the window opens or
+    /// Repaints the open-with key. Called by the app when the strip opens or
     /// closes, so the key reflects what is actually on screen.
-    public func setStackPanelOpen(_ open: Bool) async {
-        guard stackPanelOpen != open else { return }
-        stackPanelOpen = open
+    public func setOpenWithPanelOpen(_ open: Bool) async {
+        guard openWithPanelOpen != open else { return }
+        openWithPanelOpen = open
         await forceRepaint()
     }
 

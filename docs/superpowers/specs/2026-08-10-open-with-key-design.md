@@ -53,11 +53,16 @@ makes "6, right, Enter" a gesture rather than a decision.
 | Esc | dismisses without opening |
 | key 6 again | dismisses, as the stack key toggled |
 | click an icon | opens it |
-| click outside the strip | dismisses |
-| any other key | ignored — it neither moves nor dismisses |
+| click the strip's own background | dismisses |
+| Cmd, Control or Option held | passed through untouched — Cmd-Q is not the strip's to eat |
+| any other key | swallowed, so it neither acts nor beeps |
 
 Moving the mouse across the strip does not move the selection. Only a click
 does, and a click also launches.
+
+A click that lands in **another app** is not in this table: the strip loses key
+status and dismisses, and focus stays where you just clicked. Yanking it back to
+the terminal would fight the click you had just made.
 
 Failures of the open itself do go to `noteError` — `Could not open Zed: …` —
 because you asked for something specific and it did not happen. Only the
@@ -71,12 +76,13 @@ leave you somewhere you did not ask to be.
 The app is `.accessory`, so showing the strip means `NSApp.activate` plus
 `makeKeyAndOrderFront`, which takes the keyboard from the terminal you were
 typing in. So the controller records `NSWorkspace.shared.frontmostApplication`
-before it activates, and on any dismissal that does not launch anything (Esc,
-key 6 again, a click outside) it reactivates that app. On Enter it does not
-bother: the app being opened activates itself.
+before it activates, and on a dismissal that does not launch anything (Esc, key 6
+again, a click on the strip's background) it reactivates that app. On Enter it
+does not bother: the app being opened activates itself.
 
 The strip also dismisses on `NSWindow.didResignKeyNotification`, so it cannot be
-left behind a window reached some other way.
+left behind a window reached some other way. That path restores nothing, because
+whatever took key status is where you asked to be.
 
 Keys are read with `NSEvent.addLocalMonitorForEvents(matching: .keyDown)`,
 installed when the strip opens and removed when it closes. A *local* monitor,
@@ -113,9 +119,11 @@ could not be tested.
 - `OpenWith.Start` — `.show(Strip)` or `.refuse(String)`.
   `start(agent:locate:)` is the whole decision, pure. `locate` is injected so
   tests do not depend on what is installed on the machine running them.
-- `OpenWith.Key` — `.left, .right, .confirm, .dismiss, .ignore` from an event
-  key code (123, 124, 36, 76, 53). Pure, so the mapping is tested without a
-  window.
+- `OpenWith.Key` — `.left, .right, .confirm, .dismiss, .ignore, .passThrough`
+  from an event key code (123, 124, 36, 76, 53) and its modifiers. Pure, so the
+  mapping is tested without a window. A Command, Control or Option chord is
+  `.passThrough`: the strip swallows plain keys so they do not beep, which means
+  it must not swallow the ones that were never meant for it.
 - `OpenWith.launch(_:directory:onError:)` — the `NSWorkspace` call, the only
   part with I/O, with `activates = true`.
 
@@ -187,7 +195,9 @@ Written before the code.
   instead of the choices is the easy way to break it.
 - Right from the last choice wraps to the first, Left from the first wraps to
   the last, and with one choice both are no-ops.
-- `Key(keyCode:)` maps 123, 124, 36, 76 and 53, and anything else is `.ignore`.
+- `Key(keyCode:)` maps 123, 124, 36, 76 and 53, anything else is `.ignore`, a
+  Command, Control or Option chord is `.passThrough`, and Shift or Caps Lock
+  still drives the strip.
 
 Renames in existing tests, which is where the row-3 off-by-one guards live:
 - `PadGeometryTests` — key 6 is `openWithKeyID`, is bound, is not an agent slot;

@@ -20,13 +20,17 @@ struct MicroManagerApp: App {
             MenuPanelView()
                 .environmentObject(bridge)
                 .task {
-                    // The stack and land keys open windows, which the bridge
-                    // knows nothing about, so the two are joined here.
-                    let stack = StackPanelController.shared
-                    stack.onVisibilityChange = { [weak bridge] open in
-                        Task { await bridge?.setStackPanelOpen(open) }
+                    // Key 6 puts up the open-with strip and key 7 opens Tower;
+                    // both are windows the bridge knows nothing about, so the
+                    // two are joined here.
+                    let openWith = OpenWithPanelController.shared
+                    openWith.onVisibilityChange = { [weak bridge] open in
+                        Task { await bridge?.setOpenWithPanelOpen(open) }
                     }
-                    bridge.onStackKey = { stack.toggle() }
+                    openWith.onError = { [weak bridge] message in
+                        bridge?.noteError(message)
+                    }
+                    bridge.onOpenWithKey = { openWith.handleKey() }
 
                     // Key 7 opens the focused agent's directory in Tower. The
                     // land flow that used to own this key is still in the repo,

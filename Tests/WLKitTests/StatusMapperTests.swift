@@ -117,7 +117,7 @@ final class StatusMapperTests: XCTestCase {
         for (slot, key) in Pad.agentKeyIDs.enumerated() {
             XCTAssertEqual(Pad.agentSlot(for: key), slot)
         }
-        XCTAssertNil(Pad.agentSlot(for: Pad.stackKeyID))
+        XCTAssertNil(Pad.agentSlot(for: Pad.openWithKeyID))
         XCTAssertNil(Pad.agentSlot(for: Pad.towerKeyID))
     }
 
@@ -245,7 +245,25 @@ extension StatusMapperTests {
         XCTAssertGreaterThan(tower.brightness ?? 0, 0, "a bound key that never lights reads as broken")
         XCTAssertLessThan(tower.brightness ?? cfg.brightness, cfg.brightness)
         XCTAssertNotEqual(tower.color, StatusMapper.tabCycleThread(cfg).color)
-        XCTAssertNotEqual(tower.color, StatusMapper.stackThread(open: false, cfg).color)
+        XCTAssertNotEqual(tower.color, StatusMapper.openWithThread(open: false, cfg).color)
+    }
+
+    /// The picker on key 6 is a window that is either on screen or not, and the
+    /// key is the only thing that says which. Dim solid closed, full breath open —
+    /// and lit at all when closed, because a bound key that never lights reads as
+    /// broken hardware.
+    func testTheOpenWithKeyShowsWhetherTheStripIsUp() {
+        let cfg = BridgeConfig()
+        let closed = StatusMapper.openWithThread(open: false, cfg)
+        let open = StatusMapper.openWithThread(open: true, cfg)
+
+        XCTAssertEqual(closed.id, Pad.openWithKeyID)
+        XCTAssertEqual(open.id, Pad.openWithKeyID)
+        XCTAssertEqual(closed.effect, .solid)
+        XCTAssertEqual(open.effect, .breath)
+        XCTAssertGreaterThan(closed.brightness ?? 0, 0)
+        XCTAssertGreaterThan(open.brightness ?? 0, closed.brightness ?? 1)
+        XCTAssertEqual(open.color, closed.color, "one key, one colour; only the state changes")
     }
 
     /// An open take is the one state on this row you need to see from across

@@ -50,7 +50,7 @@ final class SystemKeyTapTests: XCTestCase {
         XCTAssertNil(SystemKeyTap.forKey(Pad.voiceKeyID),
                      "the voice key picks its gesture from the take state, not from a table")
         XCTAssertNil(SystemKeyTap.forKey(Pad.newTabKeyID))
-        XCTAssertNil(SystemKeyTap.forKey(Pad.stackKeyID))
+        XCTAssertNil(SystemKeyTap.forKey(Pad.openWithKeyID))
         for key in Pad.agentKeyIDs { XCTAssertNil(SystemKeyTap.forKey(key)) }
     }
 }

@@ -53,7 +53,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 
 | key | what it does |
 |---|---|
-| stack | floats the GitButler stack for the focused agent |
+| open | opens the focused agent's directory in Finder, Zed or Tower |
 | tower | opens the focused agent's directory in Tower |
 | tabs | cycles the tabs of the focused Herdr window |
 | new tab | opens a Herdr tab beside the focused agent |
@@ -77,18 +77,37 @@ Monitoring, since they synthesise key events.
 **The dial** tunes reasoning effort. **The joystick** switches model: it puts
 the model list on screen, north and south move, east confirms, west cancels.
 
-### The stack key
+### The open key
 
-It floats `but status` in the middle of the screen; press again to put it away.
-The window never takes focus — you are reading it *from* the terminal you were
-already typing in, and a read-only view that steals the keyboard would cost two
-keystrokes to undo. Click the output to select text, click anywhere else to
-dismiss.
+It puts up a horizontal strip of app icons — Finder, Zed,
+[Tower](https://www.git-tower.com) — in the manner of the macOS app switcher.
+Left and Right move the selection and wrap at the ends, Enter opens the focused
+agent's working directory in the selected app, Esc dismisses, and pressing the
+key again puts the strip away. Clicking an icon opens it. The line under the
+icons names the app and the directory, so you can see what Enter will do before
+you commit to it.
 
-`but` is found by search, not by `PATH`: an app launched by launchd inherits
-`/usr/bin:/bin:/usr/sbin:/sbin`, so the binary your terminal finds instantly is
-invisible here. Homebrew and Cargo locations are checked directly, then your
-login shell is asked. Set `WL_BUT_PATH` to skip all of it.
+An app that is not installed is left out of the strip rather than shown and
+refusing. The selection always starts on Finder, so "open, right, Enter" is a
+gesture rather than a decision.
+
+This is the one window in the app that **takes the keyboard**, because it has to
+read the arrow keys. It hands focus back to the app you came from when you
+dismiss it without opening anything. If Herdr has nothing focused, the key does
+nothing visible; the reason waits in the menu panel.
+
+Tower is here as well as on its own key. The key is the shortcut for the app you
+reach for most; the strip is the deliberate choice among three.
+
+The GitButler stack this key used to float is still in the app, still building
+and still tested. It is only unwired from the pad.
+
+Apps are opened through `NSWorkspace`, not by running `open`, `zed` or
+`gittower`. An app launched by launchd inherits `/usr/bin:/bin:/usr/sbin:/sbin`,
+so the binaries your terminal finds instantly are invisible here. The dormant
+stack code carries a whole search to work around that for `but` — Homebrew and
+Cargo locations first, then your login shell, with `WL_BUT_PATH` to skip it all
+— and `NSWorkspace` needs none of it.
 
 ## The panel
 

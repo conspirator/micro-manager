@@ -34,9 +34,9 @@ public struct BridgeConfig: Sendable {
         "done": .solid,
         "unknown": .solid,
     ]
-    /// The stack key is not an agent, so it gets a colour of its own rather
+    /// The open-with key is not an agent, so it gets a colour of its own rather
     /// than borrowing one of the status colours.
-    public var stackColor: Int = 0x7C4DFF
+    public var openWithColor: Int = 0x7C4DFF
     /// Same reasoning for the tab-cycle key, in a colour of its own so the two
     /// action keys read as different things.
     public var tabCycleColor: Int = 0x00BFA5
@@ -105,17 +105,17 @@ public enum StatusMapper {
         }
     }
 
-    /// The stack key's own thread. It stays lit whenever the bridge is
+    /// The open-with key's own thread. It stays lit whenever the bridge is
     /// running: binding it to an AG keycode took away the keystroke it used to
     /// send, so an unlit key would just read as broken. Breathing while the
-    /// stack is on screen, since the same key is what dismisses it.
-    public static func stackThread(
+    /// strip is on screen, since the same key is what dismisses it.
+    public static func openWithThread(
         open: Bool,
         _ cfg: BridgeConfig = BridgeConfig()
     ) -> OAI.Thread {
         OAI.Thread(
-            id: Pad.stackKeyID,
-            color: cfg.stackColor,
+            id: Pad.openWithKeyID,
+            color: cfg.openWithColor,
             brightness: open ? cfg.brightness : cfg.brightness * 0.3,
             effect: open ? .breath : .solid,
             speed: cfg.speed
@@ -123,7 +123,7 @@ public enum StatusMapper {
     }
 
     /// The tab-cycle key's thread. Dimly lit whenever the bridge runs, for the
-    /// same reason as the stack key: a bound-but-dark key reads as broken.
+    /// same reason as the open-with key: a bound-but-dark key reads as broken.
     public static func tabCycleThread(_ cfg: BridgeConfig = BridgeConfig()) -> OAI.Thread {
         OAI.Thread(
             id: Pad.tabCycleKeyID,

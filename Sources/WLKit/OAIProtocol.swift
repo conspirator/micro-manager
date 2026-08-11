@@ -170,14 +170,20 @@ public enum Pad {
     public static func agentSlot(for key: Int) -> Int? {
         agentKeyIDs.firstIndex(of: key)
     }
-    /// Toggles the GitButler stack for the focused agent's directory. First key
-    /// of row 3, so the agent block above it stays whole.
-    public static let stackKeyID = 6
+    /// Opens the focused agent's working directory in Finder, Zed or Tower,
+    /// picked from a strip of app icons. First key of row 3, so the agent block
+    /// above it stays whole.
+    ///
+    /// This was the stack key. The stack's own code is still here — see
+    /// `StackPanel` — it is only unwired from the pad, so there is deliberately
+    /// no second constant for position 6. Two names for one key is how the panel
+    /// and the pad start to disagree.
+    public static let openWithKeyID = 6
     /// Cycles the tabs of the focused tab's workspace in Herdr. Third key of
-    /// row 3, next to the land key.
+    /// row 3, next to the Tower key.
     public static let tabCycleKeyID = 8
     /// Opens the focused agent's working directory in Tower. Second key of
-    /// row 3, next to the stack key.
+    /// row 3, next to the open-with key.
     ///
     /// This was the land key. Land's own code is still here and still tested —
     /// see `LandPanel` and `GitButler.landPlan` — it is only unwired from the
@@ -208,7 +214,7 @@ public enum Pad {
     /// The keys bound to `KV_OAI_AG*`, and so the only ones that can be lit.
     /// Every key on the pad now has a role, so this is all of them.
     public static let boundKeyIDs =
-        agentKeyIDs + [stackKeyID, tabCycleKeyID, towerKeyID] + rebindableKeyIDs
+        agentKeyIDs + [openWithKeyID, tabCycleKeyID, towerKeyID] + rebindableKeyIDs
 
     // MARK: Dial and joystick
 

@@ -149,6 +149,17 @@ while `fs.write` does) and
 
 ## Traps that waste time
 
+- **The open-with strip is the only window that takes the keyboard.** Every
+  other panel here is a `.nonactivatingPanel` that never becomes key, on
+  purpose; key 6's picker has to read the arrow keys, so it activates the app.
+  Two things about it cannot be covered by a test in this repo and are worth
+  checking by hand after any change: Esc puts you back in the app you came from,
+  and the strip dismisses when it loses key status instead of sitting behind
+  whatever you switched to. It reads keys with
+  `NSEvent.addLocalMonitorForEvents` and **not** a `CGEventTap` — a local monitor
+  only sees events already delivered to this app, so it cannot swallow a
+  keystroke meant for an agent, and a consuming system-wide tap is the same
+  category of thing Work Louder name as breaking communication with this pad.
 - **A click in the menu panel is not a test of the pad.** `MenuPanelView` calls
   `bridge.cycleTabs()`, `bridge.focusSlot(_:)` and friends *directly*; only a
   physical press goes pad → `v.oai.hid` → `handleKeyPress`. If clicking works

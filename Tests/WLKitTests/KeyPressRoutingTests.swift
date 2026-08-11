@@ -44,17 +44,17 @@ final class KeyPressRoutingTests: XCTestCase {
     func testTheActionKeysDoNotPostKeystrokes() {
         let controller = bridge()
         var posted: [SystemKeyTap] = []
-        var stackPresses = 0
+        var openWithPresses = 0
         var towerPresses = 0
         controller.onSystemKey = { posted.append($0) }
-        controller.onStackKey = { stackPresses += 1 }
+        controller.onOpenWithKey = { openWithPresses += 1 }
         controller.onTowerKey = { towerPresses += 1 }
 
-        controller.handleKeyPress(Pad.stackKeyID)
+        controller.handleKeyPress(Pad.openWithKeyID)
         controller.handleKeyPress(Pad.towerKeyID)
         for key in Pad.agentKeyIDs { controller.handleKeyPress(key) }
 
-        XCTAssertEqual(stackPresses, 1)
+        XCTAssertEqual(openWithPresses, 1)
         XCTAssertEqual(towerPresses, 1)
         XCTAssertTrue(posted.isEmpty)
     }

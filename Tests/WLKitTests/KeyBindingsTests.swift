@@ -22,7 +22,7 @@ final class KeyBindingsTests: XCTestCase {
     func testTextIsOnlyHonouredOnTheRebindableKeys() {
         let bindings = parse(#"{"keys": {"9": "Ship it", "0": "not an agent key"}}"#)
         XCTAssertEqual(bindings.text(for: 9), "Ship it")
-        for key in Pad.agentKeyIDs + [Pad.stackKeyID, Pad.tabCycleKeyID, Pad.towerKeyID] {
+        for key in Pad.agentKeyIDs + [Pad.openWithKeyID, Pad.tabCycleKeyID, Pad.towerKeyID] {
             XCTAssertFalse(Pad.rebindableKeyIDs.contains(key),
                            "key \(key) would lose its role to a stray config line")
         }

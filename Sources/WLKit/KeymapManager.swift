@@ -42,7 +42,7 @@ public enum KeymapManager {
 
     /// The keycode each managed key must carry, addressed by its position in
     /// the [2, 4, 4, 3] matrix. Bindings are per key rather than per row: the
-    /// stack key shares row 2 with three keys this app has no business
+    /// open-with key shares row 2 with three keys this app has no business
     /// touching, and rewriting the row would take their keycodes with it.
     static var bindings: [(row: Int, column: Int, code: String)] {
         Pad.boundKeyIDs.compactMap { key in

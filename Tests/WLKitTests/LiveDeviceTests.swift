@@ -28,7 +28,7 @@ final class LiveDeviceTests: XCTestCase {
         let keymap = try XCTUnwrap(KeymapManager.activeLayerKeymap(config))
         keymap.enumerated().forEach { print("row \($0.offset): \($0.element)") }
 
-        let at = try XCTUnwrap(Pad.position(of: Pad.stackKeyID))
+        let at = try XCTUnwrap(Pad.position(of: Pad.openWithKeyID))
         XCTAssertEqual(keymap[at.row][at.column], "KV_OAI_AG06")
         XCTAssertTrue(KeymapManager.isAgentKeymapApplied(config))
     }
