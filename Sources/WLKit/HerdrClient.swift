@@ -266,6 +266,22 @@ public enum HerdrClient {
         _ = try await request("pane.send_text", params: ["pane_id": paneID, "text": text])
     }
 
+    /// What a pane is showing, as plain text.
+    ///
+    /// `recent` rather than `visible`: it ends at the bottom of the output
+    /// whether or not the pane is scrolled back, and for a pi pane the last few
+    /// lines are the footer, which names the model and thinking level. That is
+    /// the only way to read a running agent's state from outside it.
+    public static func readPane(_ paneID: String, source: String = "recent") async throws -> String {
+        let result = try await request(
+            "pane.read", params: ["pane_id": paneID, "source": source]
+        )
+        guard let read = result["read"] as? [String: Any], let text = read["text"] as? String else {
+            throw HerdrError.badResponse("pane.read returned no text")
+        }
+        return text
+    }
+
     /// Focuses the tab after the focused one in its workspace, wrapping at the
     /// end. Tabs in other workspaces are left alone: cycling is a
     /// within-window gesture, not a window switcher.

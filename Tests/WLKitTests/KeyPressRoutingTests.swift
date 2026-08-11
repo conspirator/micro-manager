@@ -135,4 +135,31 @@ final class KeyPressRoutingTests: XCTestCase {
         XCTAssertTrue(posted.isEmpty)
         XCTAssertEqual(voicePresses, 0)
     }
+
+    /// The encoder is three inputs, not two. Its click arrives as its own key id
+    /// like any other press, and it must not be mistaken for a detent: a commit
+    /// read as a turn would move the highlight instead of acting on it.
+    func testTheDialReportsRotationAndPressSeparately() {
+        let controller = bridge()
+        var steps: [Int] = []
+        var presses = 0
+        controller.onDial = { steps.append($0) }
+        controller.onDialPress = { presses += 1 }
+
+        controller.handleKeyPress(Pad.dialUpID)
+        controller.handleKeyPress(Pad.dialDownID)
+        controller.handleKeyPress(Pad.dialPressID)
+
+        XCTAssertEqual(steps, [1, -1])
+        XCTAssertEqual(presses, 1)
+    }
+
+    /// The click's id sits past the joystick's sectors, where nothing else
+    /// answers. An overlap would fire two actions from one press.
+    func testTheDialPressIDIsNotSharedWithAnythingElse() {
+        XCTAssertFalse(Pad.boundKeyIDs.contains(Pad.dialPressID))
+        XCTAssertNil(Pad.JoystickDirection(keyID: Pad.dialPressID))
+        XCTAssertNil(Pad.agentSlot(for: Pad.dialPressID))
+        XCTAssertLessThanOrEqual(Pad.dialPressID, Pad.maxThreadID, "the firmware stops at AG19")
+    }
 }

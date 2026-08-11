@@ -66,7 +66,11 @@ struct MicroManagerApp: App {
                         bridge?.keyBindings ?? KeyBindings()
                     }
                     bridge.onDial = { step in tune.handleDial(step) }
+                    bridge.onDialPress = { tune.handleDialPress() }
                     bridge.onJoystick = { direction in tune.handleJoystick(direction) }
+                    PiModelPanelController.shared.onError = { [weak bridge] message in
+                        bridge?.noteError(message)
+                    }
 
                     // Choose the transport before starting: `useEmulator`
                     // rebuilds the device, so doing it after would tear down a

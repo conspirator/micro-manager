@@ -44,6 +44,21 @@ Row 3 having **three** codes is also the answer to a question the code used to
 get wrong: matrix positions 10 and 11 are two keys, not one wide keycap. The app
 bound both to the voice action for a while, which cost a key.
 
+The encoder is **three** inputs: `AG13` clockwise, `AG14` counter-clockwise,
+`AG19` for the click. `AG19` in `encoders[0][2]` is verified accepted by this
+pad's firmware (applied, read back, `isAgentKeymapApplied` true). Leave the slot
+alone and it keeps the stock `KV_OAI_ENC_CLK`, which `OAI.agIndex` drops, so the
+click is silently dead — the same failure as the old ACT row. Two things follow:
+`withAgentKeymap` and `isAgentKeymapApplied` must agree about all three slots, and
+an app older than this change considers a pad with `AG19` already applied, so the
+two versions do not fight over flash.
+
+**Which way the dial turns is unproven.** The pre-app keymap had slot 0 as
+`KV_OAI_ENC_CC` and slot 1 as `KV_OAI_ENC_CW`, while `docs/hacking.md` documents
+the order as clockwise first. The app writes `AG13` to slot 0 and treats it as
++1. If the model highlight moves the wrong way, swap the two codes in
+`KeymapManager.dialCodes` rather than inverting anything upstream.
+
 ## The bottom row posts real keystrokes
 
 Keys 9, 11 and 12 synthesise key events, so they need **Accessibility** as well
@@ -62,6 +77,56 @@ logs the state machine (`idle -> pressAndHold -> doubleTapLock -> idle`) if you
 need to watch it. That silent discard is what makes the light's state safe: when
 it drifts, the wasted press is the one Monologue throws away anyway.
 
+## Driving pi from the pad
+
+The dial picks the model on a pi pane. Everything below was read out of
+`pi-coding-agent`'s own `dist/`, and each point rules out an approach that looks
+obvious from outside:
+
+- **`ctrl+p` walks `enabledModels` from `~/.pi/agent/settings.json`, in file
+  order, wrapping.** `main.js:554` resolves that array into the session's scoped
+  models at startup and `_cycleScopedModel` steps through it. So the pad must not
+  keep its own copy of the list; there is already one, and it is authoritative.
+- **Writing `settings.json` cannot switch a running pane.** `defaultModel` is
+  read at `main.js:305` at startup and nowhere else, nothing watches the file, and
+  `/reload` does not re-read it. A write changes the *next* session. Worse, pi
+  rewrites the field itself on every cycle, behind a `proper-lockfile` lock whose
+  retry is a **synchronous 20ms busy-wait, ten times** — so contending with it
+  stalls pi's event loop for up to 200ms and then throws.
+- **`/model <provider/id>` does switch it, exactly, in one shot** —
+  `handleModelCommand` → `findExactModelReferenceMatch` → `setModel`, no picker,
+  and it works mid-stream. But it arrives as *text* in the prompt editor, and pi
+  only recognises it when the whole editor content starts with `/model `. With a
+  half-written prompt in there, the command is appended to your draft and
+  submitted to the model. A chord is not text, which is why the dial sends
+  `ctrl+p` instead. (The Claude `/effort` path in `TuneController` still has this
+  hazard, unremarked.)
+- **`cycleModel` is async and unserialised.** It awaits `checkAuth` for every
+  scoped model before applying the change, so several chords delivered together
+  can all read the same current model and collapse into one step. `PiModels.advance`
+  therefore sends one chord, confirms it against the pane, then sends the next.
+  A burst would land a model short, silently, and only sometimes.
+- **`shift+ctrl+p` is untested here.** Pi *can* tell it apart — `pi-tui`
+  negotiates the Kitty keyboard protocol and falls back to `modifyOtherKeys` — but
+  whether Herdr encodes the shift through `pane.send_keys` is unknown. Forward
+  wrapping needs at most `count - 1` chords and avoids the question. To settle it,
+  send one `ctrl+shift+p` to an idle pi pane and read the footer: backward means
+  the top model wrapped to the bottom, degraded means it stepped forward.
+- **`pane.read` is how you see a running agent's state.** `source: "recent"` ends
+  at the bottom of the output whether or not the pane is scrolled, and pi's footer
+  line reads `0.0%/1.0M (auto)   (apple-anthropic) anthropic.claude-opus-5 • high`.
+  Pi drops the `(provider)` prefix when only one provider is available and
+  truncates the right side in a narrow pane, so **match the model id alone**. The
+  last mention in the text wins: the scrollback above is full of models being
+  discussed rather than used.
+- **Session logs are keyed by cwd**, at
+  `~/.pi/agent/sessions/--Users-webb-src-micro-manager--/`, and every model change
+  appends a `model_change` entry. Herdr exposes no pi session id, so mapping a
+  pane to a log means guessing by cwd and mtime. `pane.read` is exact and cheaper.
+- **Herdr's method list is worth asking for.** A bogus method name returns every
+  variant it expected; that is how `pane.read` and its `source` values (`visible`,
+  `recent`, `recent_unwrapped`, `detection`) were found.
+
 ## Open problems
 
 1. **`cycleTabs()` and `injectPrompt()` never call `raiseTerminal()`.**
@@ -76,6 +141,15 @@ it drifts, the wasted press is the one Monologue throws away anyway.
 3. **`debugAccumulator` still clears at 4096 characters.** Same shape as the RPC
    bug that was just fixed, on the device-log channel. Unproven, but a long line
    would vanish the same way.
+4. **The model panel has not been driven from the hardware yet.** The keymap
+   change is verified on the pad, but a physical turn and click were never
+   watched arriving, so the direction of rotation and the `AG19` notification are
+   still unproven at the app level. The emulator cannot answer either: it always
+   binds its keymap, so every action works there whatever the wire does.
+5. **Extracting `KeyTakingPanel` out of key 6 needs its two hand-checks.** Esc
+   returning you to the app you came from, and the strip dismissing when it loses
+   key status, are the two behaviours no test here covers — and they are exactly
+   what the extraction could have broken.
 
 ## The pad can wedge, and USB cannot reset it
 

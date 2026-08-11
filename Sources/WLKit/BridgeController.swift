@@ -61,6 +61,8 @@ public final class BridgeController: ObservableObject {
     public var onSystemKey: ((SystemKeyTap) -> Void)?
     /// Called per dial detent: +1 clockwise, -1 counter-clockwise.
     public var onDial: ((Int) -> Void)?
+    /// Called when the dial is pressed in.
+    public var onDialPress: (() -> Void)?
     /// Called when the joystick enters a cardinal sector.
     public var onJoystick: ((Pad.JoystickDirection) -> Void)?
     /// Consulted before any key does its normal job. Returning true consumes
@@ -466,6 +468,8 @@ public final class BridgeController: ObservableObject {
             }
         } else if index == Pad.dialUpID || index == Pad.dialDownID {
             onDial?(index == Pad.dialUpID ? 1 : -1)
+        } else if index == Pad.dialPressID {
+            onDialPress?()
         } else if let direction = Pad.JoystickDirection(keyID: index) {
             onJoystick?(direction)
         } else if let slot = Pad.agentSlot(for: index) {

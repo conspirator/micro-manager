@@ -94,6 +94,9 @@ struct EmulatorView: View {
 
             HStack(spacing: 10) {
                 stepper("Dial", down: Pad.dialDownID, up: Pad.dialUpID)
+                Button { emulator.press(Pad.dialPressID) } label: { Image(systemName: "circle.circle") }
+                    .buttonStyle(.bordered)
+                    .help("Press the dial in — key \(Pad.dialPressID)")
                 Spacer(minLength: 0)
                 joystick
             }

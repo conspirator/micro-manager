@@ -3,6 +3,11 @@ import WLKit
 
 /// The dial and joystick: effort and model for whichever agent has focus.
 ///
+/// Three agents, three mechanisms, because each one only accepts what it
+/// accepts. Pi gets the dial to itself: `PiModelPanelController` puts its model
+/// list on screen and the click walks `ctrl+p` to the row you chose, so nothing
+/// is typed into its prompt and nothing here has to guess.
+///
 /// Claude Code takes orders directly — `/effort <level>` and `/model <name>`
 /// are commands, so the dial climbs an effort ladder and the joystick cycles
 /// a model list, both configurable. Codex has bindable effort commands but
@@ -39,17 +44,43 @@ final class TuneController {
     private var codexPickerOpened: Date?
     private static let pickerLifetime: TimeInterval = 30
 
-    // MARK: - Dial: effort
+    // MARK: - Dial: models for pi, effort for the rest
 
     func handleDial(_ step: Int) {
         Task { await dial(step) }
     }
 
+    /// The dial's click. Commits the model panel when it is up; otherwise it is
+    /// pi's only, since nothing else on the pad has a list to open.
+    func handleDialPress() {
+        if PiModelPanelController.shared.isVisible {
+            PiModelPanelController.shared.press()
+            return
+        }
+        Task { [weak self] in
+            guard let (agent, pane) = await self?.focusedPane() else { return }
+            guard agent.agent.lowercased() == "pi" else {
+                self?.onError?("The dial's click picks a model, which only pi panes offer.")
+                return
+            }
+            PiModelPanelController.shared.open(agent: agent, pane: pane, step: 0)
+        }
+    }
+
     private func dial(_ step: Int) async {
+        // A panel already up takes the detent without asking Herdr anything: a
+        // highlight that waited for a socket round trip would feel like a dial
+        // with slack in it.
+        if PiModelPanelController.shared.isVisible {
+            PiModelPanelController.shared.turn(step)
+            return
+        }
         guard let (agent, pane) = await focusedPane() else { return }
         let kind = agent.agent.lowercased()
         do {
-            if kind.contains("claude") {
+            if kind == "pi" {
+                PiModelPanelController.shared.open(agent: agent, pane: pane, step: step)
+            } else if kind.contains("claude") {
                 let ladder = bindings().claudeEfforts
                 let index = climb(claudeEffortIndex[pane] ?? ladder.count / 2,
                                   by: step, within: ladder.count)

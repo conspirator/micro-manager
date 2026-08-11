@@ -525,16 +525,19 @@ debounced signals instead of a raw stream to threshold yourself.
 
 ### The dial
 
-`layout.encoders` is a list of `[clockwise, counter-clockwise, press]`. Bind the
-two rotation slots and leave the press alone unless you want it:
+`layout.encoders` is a list of `[clockwise, counter-clockwise, press]`. All three
+slots take AG codes:
 
 ```js
 layer.layout.encoders[0][0] = "KV_OAI_AG13";   // CW
 layer.layout.encoders[0][1] = "KV_OAI_AG14";   // CCW
+layer.layout.encoders[0][2] = "KV_OAI_AG19";   // press
 ```
 
 Each detent now arrives as `AG13` / `AG14` through the same notification
-handler. There is nothing at index 13/14 to light — these ids are inputs only.
+handler, and the click as `AG19` — verified accepted by the firmware, which keeps
+the stock `KV_OAI_ENC_CLK` if you leave the slot alone. There is nothing at index
+13, 14 or 19 to light — these ids are inputs only.
 
 ### The joystick
 

@@ -132,39 +132,10 @@ public enum OpenWith {
 
     // MARK: - Keys
 
-    /// What a key code means while the strip is up.
-    ///
-    /// Read from the key code rather than the characters: the arrow keys have no
-    /// sensible characters, and a layout that remaps letters must not move the
-    /// selection.
-    ///
-    /// Unrecognised keys are `.ignore`, which the strip swallows so a stray
-    /// letter neither launches something nor beeps. Anything held with Command,
-    /// Control or Option is `.passThrough` instead: the strip has no business
-    /// eating Cmd-Q or Cmd-Tab just because it happens to be on screen.
-    public enum Key: Equatable, Sendable {
-        case left
-        case right
-        case confirm
-        case dismiss
-        case ignore
-        case passThrough
-
-        public init(keyCode: UInt16, modifiers: NSEvent.ModifierFlags = []) {
-            let held = modifiers.intersection(.deviceIndependentFlagsMask)
-            if !held.isDisjoint(with: [.command, .control, .option]) {
-                self = .passThrough
-                return
-            }
-            switch keyCode {
-            case 123: self = .left
-            case 124: self = .right
-            case 36, 76: self = .confirm   // Return, and the keypad's Enter
-            case 53: self = .dismiss       // Esc
-            default: self = .ignore
-            }
-        }
-    }
+    /// The strip reads its keys through `PanelKey`, which every focus-taking
+    /// panel here shares. It uses the horizontal axis and swallows the vertical
+    /// one.
+    public typealias Key = PanelKey
 
     // MARK: - Launching
 

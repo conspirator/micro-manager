@@ -57,8 +57,9 @@ final class PadEmulatorTests: XCTestCase {
         for key in Pad.boundKeyIDs {
             XCTAssertTrue(emulator.bound.contains(key), "key \(key) should be bound")
         }
-        // The dial and the joystick's cardinals bind too.
+        // The dial, its click, and the joystick's cardinals bind too.
         XCTAssertTrue(emulator.bound.isSuperset(of: [Pad.dialUpID, Pad.dialDownID,
+                                                     Pad.dialPressID,
                                                      Pad.joyNorthID, Pad.joyEastID,
                                                      Pad.joySouthID, Pad.joyWestID]))
     }
@@ -67,10 +68,11 @@ final class PadEmulatorTests: XCTestCase {
         let (device, emulator) = try connected()
         _ = try await KeymapManager.apply(device)
 
-        // Key 19 is inside the firmware's id space but not on the pad, so the
-        // app never binds it — the perfect stand-in for an unbound key.
+        // Key 20 is past every id the app binds — the keys, the dial's two
+        // detents and its click, the joystick's sectors — so it stands in for an
+        // unbound key. It was 19 until the encoder's click took that one.
         let threads = [OAI.Thread(id: 0, color: 0xFF0000, brightness: 1, effect: .solid),
-                       OAI.Thread(id: 19, color: 0x00FF00, brightness: 1, effect: .solid)]
+                       OAI.Thread(id: 20, color: 0x00FF00, brightness: 1, effect: .solid)]
         let result = try await device.callAsync(OAI.methodThreads,
                                                 params: OAI.threadsParams(threads))
         // The firmware says ok to both, which is exactly the trap.
@@ -79,7 +81,7 @@ final class PadEmulatorTests: XCTestCase {
         XCTAssertEqual(emulator.keys[0]?.color, 0xFF0000)
         XCTAssertTrue(emulator.keys[0]?.isLit == true)
         XCTAssertTrue(emulator.bound.contains(0))
-        XCTAssertFalse(emulator.bound.contains(19), "key 19 is not on the pad")
+        XCTAssertFalse(emulator.bound.contains(20), "key 20 is not on the pad")
     }
 
     func testOmittedFieldsLeaveThatAspectAlone() async throws {

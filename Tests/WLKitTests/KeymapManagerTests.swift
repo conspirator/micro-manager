@@ -64,18 +64,37 @@ final class KeymapManagerTests: XCTestCase {
         XCTAssertTrue(KeymapManager.isAgentKeymapApplied(try KeymapManager.withAgentKeymap(config)))
     }
 
-    /// The dial's rotations become AG codes; its press keeps its keycode.
-    func testApplyingBindsTheDialButNotItsPress() throws {
+    /// All three encoder slots, and the pairing that matters more than either
+    /// half: `isAgentKeymapApplied` has to agree with the writer, or `apply()`
+    /// writes flash on every bridge start and then reports a fault for the keymap
+    /// it just wrote.
+    func testApplyingBindsTheDialAndItsPress() throws {
         let config = try backupKeymap()
         let next = try KeymapManager.withAgentKeymap(config)
 
-        let original = try XCTUnwrap(KeymapManager.activeLayerLayout(config))
         let layout = try XCTUnwrap(KeymapManager.activeLayerLayout(next))
         let dial = try XCTUnwrap((layout["encoders"] as? [[String]])?.first)
-        let originalDial = try XCTUnwrap((original["encoders"] as? [[String]])?.first)
         XCTAssertEqual(dial[0], "KV_OAI_AG13")
         XCTAssertEqual(dial[1], "KV_OAI_AG14")
-        XCTAssertEqual(dial[2], originalDial[2], "the press is not ours to take")
+        XCTAssertEqual(dial[2], "KV_OAI_AG19", "the click commits the model picker now")
+        XCTAssertTrue(KeymapManager.isAgentKeymapApplied(next))
+    }
+
+    /// A pad whose rotations are bound but whose click is still the stock
+    /// keycode is *not* applied. Before the click was managed this was the
+    /// steady state, so an installed app meeting a keymap it wrote last week
+    /// has to notice the difference and rewrite it once.
+    func testADialWithAnUnboundPressIsNotApplied() throws {
+        var config = try KeymapManager.withAgentKeymap(try backupKeymap())
+        var profiles = try XCTUnwrap(config["profiles"] as? [[String: Any]])
+        var layers = try XCTUnwrap(profiles[0]["layers"] as? [[String: Any]])
+        var layout = try XCTUnwrap(layers[0]["layout"] as? [String: Any])
+        layout["encoders"] = [["KV_OAI_AG13", "KV_OAI_AG14", "KC_MPLY"]]
+        layers[0]["layout"] = layout
+        profiles[0]["layers"] = layers
+        config["profiles"] = profiles
+
+        XCTAssertFalse(KeymapManager.isAgentKeymapApplied(config))
     }
 
     /// The joystick's four cardinal sectors become AG codes; diagonals keep

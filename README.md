@@ -82,8 +82,41 @@ from the keyboard instead makes that drift, and the next press puts it right.
 Both Esc/Enter and the voice key need **Accessibility** on top of Input
 Monitoring, since they synthesise key events.
 
-**The dial** tunes reasoning effort. **The joystick** switches model: it puts
-the model list on screen, north and south move, east confirms, west cancels.
+**The dial** picks the model on a pi pane and tunes reasoning effort on Claude
+and Codex. **The joystick** switches model on Claude and Codex: it puts the model
+list on screen, north and south move, east confirms, west cancels.
+
+### The dial, on a pi pane
+
+Turning it puts pi's own model list on screen and moves a highlight. Nothing is
+sent while you turn: the panel is a proposal. **Pressing the dial in** commits,
+by sending the pane as many `ctrl+p` chords as it takes to walk from the model pi
+reports to the one you chose. Esc dismisses, so does a click outside, losing
+focus, or twenty seconds of nothing. Pressing the dial with no panel up opens it.
+
+The list is `enabledModels` from `~/.pi/agent/settings.json`, which is the same
+list, in the same order, that ctrl+p walks inside pi. There is deliberately no
+second copy in this app's config: a copy is a copy that goes stale.
+
+What it does **not** do is type into pi's prompt. `/model <provider/id>` would
+switch a session in one shot, but only when the editor is empty — with a
+half-written prompt sitting there, the command is appended to your draft and
+submitted as a question. A chord is not text, so `ctrl+p` is safe with a draft.
+Writing `settings.json` is no use either: pi reads `defaultModel` once, at
+startup, and nothing watches the file, so a write would change the next session
+and leave the pane in front of you alone.
+
+Each chord is confirmed before the next is sent, by reading the pane back and
+waiting for the footer to name a different model. Pi's own `cycleModel` awaits an
+auth check per model and nothing serialises it, so a burst of chords can collapse
+into one change and land a model short. If a press moves nothing, or the walk
+ends somewhere else, the reason goes to the menu panel rather than passing as
+success.
+
+A pane that pi did not start, fewer than two enabled models, a glob in the list
+(which pi expands and the pad cannot count through), or two enabled models
+sharing an id: each is refused before the panel opens, silently on screen and
+with the reason in the menu panel.
 
 ### The open key
 
@@ -202,7 +235,8 @@ key has a role, and an empty string returns a key to it.
 
 `codex.models` is your copy of what Codex's own `/model` menu offers, in its
 order — the joystick steers that menu rather than owning it, so there is nothing
-to read it from.
+to read it from. Pi needs no entry here: its list is read from pi's own
+`settings.json`.
 
 | variable | what it overrides |
 |---|---|

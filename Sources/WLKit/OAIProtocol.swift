@@ -227,6 +227,9 @@ public enum Pad {
     /// `v.oai.hid` reports. These IDs never light — nothing is under them.
     public static let dialUpID = 13     // encoder, clockwise detent
     public static let dialDownID = 14   // encoder, counter-clockwise detent
+    /// The encoder's click. Not a light and not in the key matrix — the highest
+    /// id the firmware's keycode table offers, which is why it is 19 and not 15.
+    public static let dialPressID = 19
     /// The joystick's four cardinal sectors, named by the angle fraction at
     /// their centre in the radial map (0 = east, counter-clockwise).
     public static let joyNorthID = 15   // sector centred on 0.25

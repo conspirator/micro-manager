@@ -5,15 +5,9 @@ import WLKit
 /// The app-switcher strip on key 6: pick Finder, Zed or Tower, and the focused
 /// agent's working directory opens there.
 ///
-/// This is the one window in the app that **takes focus**, and it is not built on
-/// `FloatingPanel` for that reason. That class promises never to become key —
-/// "you are looking at it *from* the terminal you were already typing in" — and
-/// the stack, tune and land panels all depend on the promise. A mode switch
-/// inside it would put the exception in the one place they share.
-///
-/// Taking focus means it can leave you somewhere you did not ask to be, so the
-/// controller remembers what was frontmost and puts it back on any dismissal
-/// that does not launch something.
+/// The window itself is a `KeyTakingPanel`, which this key shares with the dial's
+/// model picker: both have to read arrow keys, and the reasons that window is not
+/// a `FloatingPanel` are written down there.
 @MainActor
 final class OpenWithPanelController {
 
@@ -21,22 +15,20 @@ final class OpenWithPanelController {
 
     /// Fires when the strip appears or disappears, so key 6's light can follow
     /// it. Same join the stack panel used.
-    var onVisibilityChange: ((Bool) -> Void)?
+    var onVisibilityChange: ((Bool) -> Void)? {
+        get { panel.onVisibilityChange }
+        set { panel.onVisibilityChange = newValue }
+    }
     /// Where refusals go: the menu panel, via the bridge's own error line.
     var onError: ((String) -> Void)?
 
-    private var panel: NSPanel?
-    private var model = StripModel()
-    private var keyMonitor: Any?
-    private var resignObserver: NSObjectProtocol?
-    /// What to reactivate on a dismissal that launches nothing. An app press is
-    /// a detour, not a destination.
-    private var previousApp: NSRunningApplication?
+    private let model = StripModel()
+    private lazy var panel: KeyTakingPanel = makePanel()
     /// Bumped by every open and close, so a resolve belonging to an earlier
     /// press cannot put up a strip you have already dismissed.
     private var generation = 0
 
-    var isVisible: Bool { panel?.isVisible == true }
+    var isVisible: Bool { panel.isVisible }
 
     // MARK: - The key
 
@@ -67,107 +59,31 @@ final class OpenWithPanelController {
 
     private func present(_ strip: OpenWith.Strip) {
         model.strip = strip
-        previousApp = NSWorkspace.shared.frontmostApplication
-
-        let panel = panel ?? makePanel()
-        self.panel = panel
-        centre(panel)
-        NSApp.activate(ignoringOtherApps: true)
-        panel.makeKeyAndOrderFront(nil)
-        startWatching(panel)
-        onVisibilityChange?(true)
+        panel.present(size: StripView.size(choices: strip.choices.count))
     }
 
     /// Esc, key 6 again, a click outside, or losing key status. Puts the
     /// keyboard back where it was.
     private func dismiss() {
-        close()
-        previousApp?.activate()
-        previousApp = nil
+        generation += 1
+        panel.dismiss()
     }
 
     /// Enter. The app being opened activates itself, so nothing is restored.
     private func confirm() {
         guard let strip = model.strip else { return }
-        close()
-        previousApp = nil
+        generation += 1
+        panel.closeWithoutRestoring()
         OpenWith.launch(strip.selected, directory: strip.directory) { [weak self] message in
             self?.onError?(message)
         }
     }
 
-    private func close() {
-        generation += 1
-        stopWatching()
-        panel?.orderOut(nil)
-        onVisibilityChange?(false)
-    }
-
-    // MARK: - Keys
-
-    /// A **local** monitor, deliberately, not a `CGEventTap`. A local monitor
-    /// only sees events already delivered to this app, so it needs no Input
-    /// Monitoring grant and cannot swallow a keystroke meant for an agent — and
-    /// a consuming system-wide tap is the same category of thing Work Louder
-    /// name as breaking communication with this pad. Returning nil consumes the
-    /// key so it does not also beep.
-    private func startWatching(_ panel: NSPanel) {
-        guard keyMonitor == nil else { return }
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, self.isVisible else { return event }
-            switch OpenWith.Key(keyCode: event.keyCode, modifiers: event.modifierFlags) {
-            case .left: self.model.move(.left); return nil
-            case .right: self.model.move(.right); return nil
-            case .confirm: self.confirm(); return nil
-            case .dismiss: self.dismiss(); return nil
-            case .ignore: return nil
-            case .passThrough: return event
-            }
-        }
-        resignObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResignKeyNotification,
-            object: panel,
-            queue: .main
-        ) { [weak self] _ in
-            // Reached another window some other way: the strip should not be
-            // left behind it, waiting for keys it will never receive.
-            Task { @MainActor [weak self] in
-                guard let self, self.isVisible else { return }
-                self.close()
-                self.previousApp = nil
-            }
-        }
-    }
-
-    private func stopWatching() {
-        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
-        keyMonitor = nil
-        if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
-        resignObserver = nil
-    }
-
     // MARK: - Window
 
-    private func makePanel() -> NSPanel {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
-            styleMask: [.titled, .fullSizeContentView],
-            backing: .buffered,
-            defer: false
-        )
-        panel.titlebarAppearsTransparent = true
-        panel.titleVisibility = .hidden
-        for button: NSWindow.ButtonType in [.closeButton, .miniaturizeButton, .zoomButton] {
-            panel.standardWindowButton(button)?.isHidden = true
-        }
-        panel.isMovableByWindowBackground = true
-        panel.level = .floating
-        panel.hidesOnDeactivate = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = true
-
+    /// Returning nil from the key handler consumes the key so it does not also
+    /// beep. The strip works the horizontal axis and swallows the vertical one.
+    private func makePanel() -> KeyTakingPanel {
         let view = StripView(
             model: model,
             onPick: { [weak self] index in
@@ -176,32 +92,23 @@ final class OpenWithPanelController {
             },
             onDismiss: { [weak self] in self?.dismiss() }
         )
-        let hosting = NSHostingView(rootView: view)
-        hosting.frame = NSRect(x: 0, y: 0, width: 100, height: 100)
-        hosting.autoresizingMask = [.width, .height]
-        panel.contentView = hosting
+        let panel = KeyTakingPanel { NSHostingView(rootView: view) }
+        panel.onKey = { [weak self] key, event in
+            guard let self else { return event }
+            switch key {
+            case .left: self.model.move(.left); return nil
+            case .right: self.model.move(.right); return nil
+            case .confirm: self.confirm(); return nil
+            case .dismiss: self.dismiss(); return nil
+            case .up, .down, .ignore: return nil
+            case .passThrough: return event
+            }
+        }
+        panel.onResignKey = { [weak self] in
+            self?.generation += 1
+            self?.panel.closeWithoutRestoring()
+        }
         return panel
-    }
-
-    /// Centred on the screen holding the mouse, like every other panel here, and
-    /// sized to its content so a two-icon strip is not mostly margin.
-    private func centre(_ panel: NSPanel) {
-        let count = model.strip?.choices.count ?? OpenWith.App.all.count
-        let size = StripView.size(choices: count)
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
-            ?? NSScreen.main
-            ?? NSScreen.screens.first
-        guard let visible = screen?.visibleFrame else { return }
-        panel.setFrame(
-            NSRect(
-                x: visible.midX - size.width / 2,
-                y: visible.midY - size.height / 2,
-                width: size.width,
-                height: size.height
-            ),
-            display: true
-        )
     }
 }
 

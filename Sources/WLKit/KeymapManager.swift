@@ -21,9 +21,10 @@ public enum KeymapManager {
         "KV_OAI_AG12",
     ]
 
-    /// The dial: clockwise, counter-clockwise. Its press keeps whatever it
-    /// already does — that click is not this app's to take.
-    static let dialCodes = ["KV_OAI_AG13", "KV_OAI_AG14"]
+    /// The dial: clockwise, counter-clockwise, press. The press is bound now
+    /// because it commits the model picker; before that it was left alone, on
+    /// the grounds that the click was not this app's to take.
+    static let dialCodes = ["KV_OAI_AG13", "KV_OAI_AG14", "KV_OAI_AG19"]
 
     /// The joystick's four cardinal sectors, matched by the angle at their
     /// centre in the radial map. Diagonal sectors are left alone.
@@ -105,9 +106,9 @@ public enum KeymapManager {
         return layer["layout"] as? [String: Any]
     }
 
-    /// True when every managed key and the dial carry their AG codes on the
-    /// active layer, and every joystick sector that *exists* carries the code
-    /// for its direction.
+    /// True when every managed key, the dial and its click carry their AG codes
+    /// on the active layer, and every joystick sector that *exists* carries the
+    /// code for its direction.
     ///
     /// This must mirror `withAgentKeymap` exactly. It did not: the writer
     /// rewrites only the sectors already in the list, while this demanded all
@@ -128,9 +129,14 @@ public enum KeymapManager {
 
         guard let layout = activeLayerLayout(config) else { return false }
         if let encoders = layout["encoders"] as? [[String]], let dial = encoders.first {
-            guard dial.count >= 2, dial[0] == dialCodes[0], dial[1] == dialCodes[1] else {
-                return false
+            // Every slot the writer would touch, or `apply()` writes flash on
+            // every single bridge start and then reports a keymap fault for a
+            // keymap it just wrote correctly. This must mirror `withAgentKeymap`
+            // exactly; it did not once before, and that was the cost.
+            for slot in dialCodes.indices where slot < dial.count {
+                guard dial[slot] == dialCodes[slot] else { return false }
             }
+            guard dial.count >= dialCodes.count else { return false }
         }
         if let joystick = layout["joystick"] as? [String: Any],
            let sectors = joystick["sectors"] as? [[String: Any]] {
@@ -172,11 +178,10 @@ public enum KeymapManager {
             keymap[binding.row][binding.column] = binding.code
         }
 
-        // The dial's two rotation slots; its press stays untouched.
+        // The dial's rotations and its click.
         if var encoders = layout["encoders"] as? [[String]],
-           var dial = encoders.first, dial.count >= 2 {
-            dial[0] = dialCodes[0]
-            dial[1] = dialCodes[1]
+           var dial = encoders.first, dial.count >= dialCodes.count {
+            for slot in dialCodes.indices { dial[slot] = dialCodes[slot] }
             encoders[0] = dial
             layout["encoders"] = encoders
         }

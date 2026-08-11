@@ -183,10 +183,21 @@ final class OpenWithTests: XCTestCase {
     /// Anything else neither moves nor dismisses. A stray keystroke while the
     /// strip is up would otherwise either launch something or throw away a
     /// window you were still reading.
+    ///
+    /// Up and down are not in this list: they are real cases now, for the model
+    /// picker, and the strip treats them the way it treats an unrecognised key.
     func testEveryOtherKeyIsIgnored() {
-        for keyCode in [UInt16(0), 1, 12, 48, 49, 125, 126] {
+        for keyCode in [UInt16(0), 1, 12, 48, 49] {
             XCTAssertEqual(OpenWith.Key(keyCode: keyCode), .ignore, "key code \(keyCode)")
         }
+    }
+
+    /// The vertical axis belongs to the model picker, the horizontal one to the
+    /// strip. One type reads both so neither panel invents its own key codes.
+    func testTheVerticalArrowsAreTheirOwnCases() {
+        XCTAssertEqual(PanelKey(keyCode: 125), .down)
+        XCTAssertEqual(PanelKey(keyCode: 126), .up)
+        XCTAssertEqual(PanelKey(keyCode: 125, modifiers: .command), .passThrough)
     }
 
     /// The strip swallows plain keys so they do not beep, which means it must not
