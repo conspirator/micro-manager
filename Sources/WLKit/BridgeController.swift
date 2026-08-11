@@ -41,6 +41,10 @@ public final class BridgeController: ObservableObject {
     @Published public private(set) var openWithPanelOpen = false
     /// Whether a Monologue take is open, for the voice key's light.
     @Published public private(set) var voiceActive = false
+    /// Whether key 7 is armed: one more press of it closes Herdr's focused tab.
+    /// Published because both lights and the menu panel have to show it — an arm
+    /// nobody can see is a trap.
+    @Published public private(set) var closeTabArmed = false
 
     public var config: BridgeConfig
     /// Text macros for the rebindable keys, reloaded on every bridge start so a
@@ -50,9 +54,6 @@ public final class BridgeController: ObservableObject {
     /// Called when the open-with key is pressed. The bridge owns the key, the
     /// app owns the window, so this is where the two meet.
     public var onOpenWithKey: (() -> Void)?
-    /// Called when the Tower key is pressed; same split as `onOpenWithKey` — the
-    /// bridge owns the key, the app opens Tower.
-    public var onTowerKey: (() -> Void)?
     /// Called when the voice key is pressed.
     public var onVoiceKey: (() -> Void)?
     /// Called with the keystroke a key stands for — Esc, Enter. The bridge knows
@@ -80,6 +81,10 @@ public final class BridgeController: ObservableObject {
     private var lastFingerprint: String?
     private var issuedIDs = Set<Int>()
     private var warnedPermission = false
+    /// The two-press guard on key 7. The rules live in the value; the bridge only
+    /// holds it, repaints on it, and runs its clock.
+    private var closeTabArm = CloseTabArm()
+    private var closeTabExpiryTask: Task<Void, Never>?
 
     public init(config: BridgeConfig = BridgeConfig()) {
         self.config = config
@@ -352,7 +357,7 @@ public final class BridgeController: ObservableObject {
         let threads = StatusMapper.threads(for: fetched, config)
             + [StatusMapper.openWithThread(open: openWithPanelOpen, config),
                StatusMapper.tabCycleThread(config),
-               StatusMapper.towerThread(config)]
+               StatusMapper.closeTabThread(armed: closeTabArmed, config)]
             + flexKeys
 
         // Fingerprint the whole rendered picture, not just the aggregate, so
@@ -386,7 +391,7 @@ public final class BridgeController: ObservableObject {
         guard deviceConnected else { return }
         do {
             _ = try await device.callAsync(OAI.methodThreads, params: OAI.threadsParams(threads))
-            let zone = StatusMapper.zone(for: state, config) ?? .dark
+            let zone = StatusMapper.zone(for: state, closeTabArmed: closeTabArmed, config) ?? .dark
             _ = try await device.callAsync(
                 OAI.methodRGBConfig,
                 params: OAI.rgbConfigParams(
@@ -417,14 +422,36 @@ public final class BridgeController: ObservableObject {
 
     /// Every bound key arrives here. Which key does what is the one place that
     /// has to agree with `Pad`, so keep the dispatch in a single switch.
+    ///
+    /// Key 7's guard runs first, because it is the only key whose meaning depends
+    /// on the key pressed before it, and because every *other* key is how an arm
+    /// gets cancelled.
     public func handleKeyPress(_ index: Int) {
         if onKeyIntercept?(index) == true { return }
+
+        switch closeTabArm.press(key: index, now: Date()) {
+        case .arm:
+            setCloseTabArmed(true)
+            return
+        case .confirm:
+            setCloseTabArmed(false)
+            Task { await closeFocusedTab() }
+            return
+        case .cancel(let swallow):
+            setCloseTabArmed(false)
+            if swallow { return }
+        case .pass:
+            break
+        }
+
+        route(index)
+    }
+
+    private func route(_ index: Int) {
         if index == Pad.openWithKeyID {
             onOpenWithKey?()
         } else if index == Pad.tabCycleKeyID {
             Task { await cycleTabs() }
-        } else if index == Pad.towerKeyID {
-            onTowerKey?()
         } else if Pad.rebindableKeyIDs.contains(index) {
             // A configured text macro wins over the key's built-in role, which
             // is how the config file may repurpose any of these four.
@@ -443,6 +470,40 @@ public final class BridgeController: ObservableObject {
             onJoystick?(direction)
         } else if let slot = Pad.agentSlot(for: index) {
             Task { await focusSlot(slot) }
+        }
+    }
+
+    /// Mirrors the arm into published state and runs its clock. The expiry task
+    /// is what gives the underglow back on its own: it is also the channel that
+    /// says whether an agent needs you, and an arm nobody confirms must not hold
+    /// it for longer than its window.
+    private func setCloseTabArmed(_ armed: Bool) {
+        closeTabExpiryTask?.cancel()
+        closeTabExpiryTask = nil
+        guard closeTabArmed != armed else { return }
+        closeTabArmed = armed
+        if armed {
+            closeTabExpiryTask = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(CloseTabArm.window * 1_000_000_000))
+                guard !Task.isCancelled, let self else { return }
+                if self.closeTabArm.expire(now: Date()) { self.setCloseTabArmed(false) }
+            }
+        }
+        Task { await forceRepaint() }
+    }
+
+    /// The pad's second press, and the menu panel's second click, land here.
+    /// Closes the tab Herdr reports as focused — the same tab `cycleTabs` counts
+    /// from — and everything running in it.
+    public func closeFocusedTab() async {
+        do {
+            guard let tab = try await HerdrClient.focusedTab() else {
+                lastError = "Nothing has focus in Herdr right now."
+                return
+            }
+            try await HerdrClient.closeTab(tab.tabID)
+        } catch {
+            lastError = error.localizedDescription
         }
     }
 

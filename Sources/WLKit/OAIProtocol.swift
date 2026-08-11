@@ -180,16 +180,20 @@ public enum Pad {
     /// and the pad start to disagree.
     public static let openWithKeyID = 6
     /// Cycles the tabs of the focused tab's workspace in Herdr. Third key of
-    /// row 3, next to the Tower key.
+    /// row 3, next to the close-tab key.
     public static let tabCycleKeyID = 8
-    /// Opens the focused agent's working directory in Tower. Second key of
+    /// Closes the tab Herdr reports as focused, on two presses. Second key of
     /// row 3, next to the open-with key.
     ///
-    /// This was the land key. Land's own code is still here and still tested —
-    /// see `LandPanel` and `GitButler.landPlan` — it is only unwired from the
-    /// pad, so there is deliberately no second constant for position 7. Two
-    /// names for one key is how the panel and the pad start to disagree.
-    public static let towerKeyID = 7
+    /// This was the land key, then the Tower key. Both of those still have code
+    /// in the repo and are still tested — see `LandPanel`, `GitButler.landPlan`
+    /// and `Tower` — they are only unwired from the pad, so there is deliberately
+    /// no second constant for position 7. Two names for one key is how the panel
+    /// and the pad start to disagree.
+    ///
+    /// Tower lost the key rather than the feature: key 6's picker opens the same
+    /// directory in Tower, so nothing was taken away.
+    public static let closeTabKeyID = 7
     /// Taps Esc, wherever the focus is. First key of the bottom row.
     public static let escKeyID = 10
     /// Creates a Herdr tab beside the focused agent and lands in it. Last key
@@ -214,7 +218,7 @@ public enum Pad {
     /// The keys bound to `KV_OAI_AG*`, and so the only ones that can be lit.
     /// Every key on the pad now has a role, so this is all of them.
     public static let boundKeyIDs =
-        agentKeyIDs + [openWithKeyID, tabCycleKeyID, towerKeyID] + rebindableKeyIDs
+        agentKeyIDs + [openWithKeyID, tabCycleKeyID, closeTabKeyID] + rebindableKeyIDs
 
     // MARK: Dial and joystick
 

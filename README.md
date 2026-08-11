@@ -54,7 +54,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | key | what it does |
 |---|---|
 | open | opens the focused agent's directory in Finder, Zed or Tower |
-| tower | opens the focused agent's directory in Tower |
+| close tab | closes the focused Herdr tab, on two presses |
 | tabs | cycles the tabs of the focused Herdr window |
 | new tab | opens a Herdr tab beside the focused agent |
 
@@ -65,6 +65,14 @@ The new-tab key opens a tab beside the focused agent, in the directory that
 agent is working in, focuses it, and brings the terminal forward. Esc and Enter
 go to whatever holds focus and raise nothing: a keystroke that moved a window
 first would land somewhere you did not mean.
+
+The close-tab key is the only thing on the pad that destroys work, so it takes
+two presses. The first arms it: the key and the **whole underglow** go solid red,
+and nothing is sent to Herdr. A second press within five seconds closes the
+focused tab and everything running in it. Esc cancels without posting an Esc
+anywhere, any other key cancels and still does its own job, and an arm nobody
+confirms lets go after five seconds — the ring is how you read whether an agent
+needs you, so it is only borrowed. Armed red is solid where blocked-red breathes.
 
 The voice key sends **two** right-control taps to start a take and **one** to
 stop it, because that is how Monologue's hotkey works — two taps inside a second
@@ -96,11 +104,12 @@ read the arrow keys. It hands focus back to the app you came from when you
 dismiss it without opening anything. If Herdr has nothing focused, the key does
 nothing visible; the reason waits in the menu panel.
 
-Tower is here as well as on its own key. The key is the shortcut for the app you
-reach for most; the strip is the deliberate choice among three.
+Tower is here rather than on a key of its own: key 7 closes a tab now, and this
+strip is the deliberate choice among three apps.
 
 The GitButler stack this key used to float is still in the app, still building
-and still tested. It is only unwired from the pad.
+and still tested. So is the Tower launcher that used to own key 7. Both are only
+unwired from the pad.
 
 Apps are opened through `NSWorkspace`, not by running `open`, `zed` or
 `gittower`. An app launched by launchd inherits `/usr/bin:/bin:/usr/sbin:/sbin`,

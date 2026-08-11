@@ -217,6 +217,19 @@ public enum HerdrClient {
         _ = try await request("tab.focus", params: ["tab_id": tabID])
     }
 
+    /// The tab Herdr reports as focused, if any. Read fresh for the same reason
+    /// as `focusedAgent`: focus is exactly the thing that changes between polls.
+    public static func focusedTab() async throws -> HerdrTab? {
+        try await listTabs().first(where: \.focused)
+    }
+
+    /// Closes a tab and everything running in it. Herdr takes only the id, and
+    /// asks nothing further — the confirmation this needs is the pad's, in
+    /// `CloseTabArm`.
+    public static func closeTab(_ tabID: String) async throws {
+        _ = try await request("tab.close", params: ["tab_id": tabID])
+    }
+
     /// Params for `tab.create`, which takes `workspace_id`, `cwd`, `label` and
     /// `focus` and returns the new tab. Without `focus` the tab is created
     /// behind your back — verified against Herdr, which answers

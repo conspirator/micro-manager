@@ -118,7 +118,7 @@ final class StatusMapperTests: XCTestCase {
             XCTAssertEqual(Pad.agentSlot(for: key), slot)
         }
         XCTAssertNil(Pad.agentSlot(for: Pad.openWithKeyID))
-        XCTAssertNil(Pad.agentSlot(for: Pad.towerKeyID))
+        XCTAssertNil(Pad.agentSlot(for: Pad.closeTabKeyID))
     }
 
     // MARK: - AG key names
@@ -232,20 +232,59 @@ extension StatusMapperTests {
         XCTAssertNotEqual(StatusMapper.newTabThread().color, StatusMapper.tabCycleThread().color)
     }
 
-    /// The Tower key has no state to show — it opens a repository and that is
-    /// all — so it sits dim and solid like the other stateless keys on its row.
-    /// Dim, not dark: the key is bound to `KV_OAI_AG*`, and a bound key that
-    /// never lights reads as broken hardware.
-    func testTheTowerKeyIsDimSolidAndNotItsNeighboursColour() {
+    /// The close-tab key at rest has no state to show, so it sits dim and solid
+    /// like the other stateless keys on its row. Dim, not dark: the key is bound
+    /// to `KV_OAI_AG*`, and a bound key that never lights reads as broken
+    /// hardware.
+    func testTheCloseTabKeyIsDimSolidAndNotItsNeighboursColour() {
         let cfg = BridgeConfig()
-        let tower = StatusMapper.towerThread(cfg)
+        let key = StatusMapper.closeTabThread(armed: false, cfg)
 
-        XCTAssertEqual(tower.id, Pad.towerKeyID)
-        XCTAssertEqual(tower.effect, .solid)
-        XCTAssertGreaterThan(tower.brightness ?? 0, 0, "a bound key that never lights reads as broken")
-        XCTAssertLessThan(tower.brightness ?? cfg.brightness, cfg.brightness)
-        XCTAssertNotEqual(tower.color, StatusMapper.tabCycleThread(cfg).color)
-        XCTAssertNotEqual(tower.color, StatusMapper.openWithThread(open: false, cfg).color)
+        XCTAssertEqual(key.id, Pad.closeTabKeyID)
+        XCTAssertEqual(key.effect, .solid)
+        XCTAssertGreaterThan(key.brightness ?? 0, 0, "a bound key that never lights reads as broken")
+        XCTAssertLessThan(key.brightness ?? cfg.brightness, cfg.brightness)
+        XCTAssertNotEqual(key.color, StatusMapper.tabCycleThread(cfg).color)
+        XCTAssertNotEqual(key.color, StatusMapper.openWithThread(open: false, cfg).color)
+    }
+
+    /// Armed, the key shouts: full brightness in the armed colour, so the one
+    /// press that cannot be undone is never the one you make by accident.
+    func testTheCloseTabKeyGoesFullBrightRedWhenArmed() {
+        let cfg = BridgeConfig()
+        let rest = StatusMapper.closeTabThread(armed: false, cfg)
+        let armed = StatusMapper.closeTabThread(armed: true, cfg)
+
+        XCTAssertEqual(armed.id, Pad.closeTabKeyID)
+        XCTAssertEqual(armed.brightness, cfg.brightness)
+        XCTAssertGreaterThan(armed.brightness ?? 0, rest.brightness ?? 0)
+        XCTAssertEqual(armed.color, cfg.closeTabArmedColor)
+        XCTAssertNotEqual(armed.color, rest.color)
+    }
+
+    /// The armed ring outranks the agent aggregate, including when there is no
+    /// aggregate at all — an armed pad with no agents still has to look armed.
+    func testTheArmedRingOutranksTheAggregate() {
+        let cfg = BridgeConfig()
+        let armed = StatusMapper.zone(for: "working", closeTabArmed: true, cfg)
+
+        XCTAssertEqual(armed?.color, cfg.closeTabArmedColor)
+        XCTAssertEqual(armed?.effect, .solid)
+        XCTAssertEqual(armed?.brightness, cfg.brightness)
+        XCTAssertEqual(StatusMapper.zone(for: nil, closeTabArmed: true, cfg)?.color,
+                       cfg.closeTabArmedColor)
+    }
+
+    /// Blocked is red too, and it is the state you must not confuse with "about
+    /// to destroy something". They differ in both colour and effect.
+    func testArmedRedIsNotBlockedRed() {
+        let cfg = BridgeConfig()
+        let armed = StatusMapper.zone(for: nil, closeTabArmed: true, cfg)
+        let blocked = StatusMapper.zone(for: "blocked", closeTabArmed: false, cfg)
+
+        XCTAssertNotEqual(armed?.color, blocked?.color)
+        XCTAssertEqual(blocked?.effect, .breath)
+        XCTAssertEqual(armed?.effect, .solid)
     }
 
     /// The picker on key 6 is a window that is either on screen or not, and the

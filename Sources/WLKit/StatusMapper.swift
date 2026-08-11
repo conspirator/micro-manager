@@ -46,10 +46,13 @@ public struct BridgeConfig: Sendable {
     public var newTabColor: Int = 0x00E5FF
     /// Esc and Enter: pale and unemphatic, because they are just keys.
     public var systemColor: Int = 0xCFD8DC
-    /// The Tower key opens a repository and holds no state of its own, so it
-    /// takes a colour with some weight to it — distinct from blocked-red, which
-    /// means "look", not "beware".
-    public var towerColor: Int = 0xE91E63
+    /// The close-tab key at rest holds no state, so it takes a colour with some
+    /// weight to it — distinct from blocked-red, which means "look", not
+    /// "beware".
+    public var closeTabColor: Int = 0xE91E63
+    /// Armed, one press from closing a tab. Solid and full-bright, where blocked
+    /// is breathing `0xFF2D2D`: the state you must not confuse with this one.
+    public var closeTabArmedColor: Int = 0xFF1744
     /// The voice key: white at rest, recording-red while a take is open.
     public var voiceColor: Int = 0xECEFF1
     public var voiceActiveColor: Int = 0xFF3B30
@@ -134,14 +137,18 @@ public enum StatusMapper {
         )
     }
 
-    /// The Tower key's thread. Nothing to show but that it is bound, so it is
-    /// dim and solid like the tab-cycle and new-tab keys: a bound-but-dark key
-    /// reads as broken.
-    public static func towerThread(_ cfg: BridgeConfig = BridgeConfig()) -> OAI.Thread {
+    /// The close-tab key's thread. At rest there is nothing to show but that it
+    /// is bound, so it is dim and solid like the tab-cycle and new-tab keys: a
+    /// bound-but-dark key reads as broken. Armed, it is full-bright red, because
+    /// the next press of it cannot be undone.
+    public static func closeTabThread(
+        armed: Bool = false,
+        _ cfg: BridgeConfig = BridgeConfig()
+    ) -> OAI.Thread {
         OAI.Thread(
-            id: Pad.towerKeyID,
-            color: cfg.towerColor,
-            brightness: cfg.brightness * 0.3,
+            id: Pad.closeTabKeyID,
+            color: armed ? cfg.closeTabArmedColor : cfg.closeTabColor,
+            brightness: armed ? cfg.brightness : cfg.brightness * 0.3,
             effect: .solid,
             speed: cfg.speed
         )
@@ -204,7 +211,25 @@ public enum StatusMapper {
     }
 
     /// The underglow zone for an aggregate state, or nil to switch it off.
-    public static func zone(for state: String?, _ cfg: BridgeConfig = BridgeConfig()) -> OAI.Zone? {
+    ///
+    /// An armed close outranks every agent state, including no agents at all: the
+    /// ring is the one thing on the pad big enough to say "the next press
+    /// destroys something", and it is worth borrowing for the five seconds an arm
+    /// lasts.
+    public static func zone(
+        for state: String?,
+        closeTabArmed: Bool = false,
+        _ cfg: BridgeConfig = BridgeConfig()
+    ) -> OAI.Zone? {
+        if closeTabArmed {
+            return OAI.Zone(
+                effect: .solid,
+                brightness: cfg.brightness,
+                speed: cfg.speed,
+                magic: 1,
+                color: cfg.closeTabArmedColor
+            )
+        }
         guard let state else { return nil }
         return OAI.Zone(
             effect: cfg.effect(for: state),

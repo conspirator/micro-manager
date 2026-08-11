@@ -20,9 +20,8 @@ struct MicroManagerApp: App {
             MenuPanelView()
                 .environmentObject(bridge)
                 .task {
-                    // Key 6 puts up the open-with strip and key 7 opens Tower;
-                    // both are windows the bridge knows nothing about, so the
-                    // two are joined here.
+                    // Key 6 puts up the open-with strip, which is a window the
+                    // bridge knows nothing about, so the two are joined here.
                     let openWith = OpenWithPanelController.shared
                     openWith.onVisibilityChange = { [weak bridge] open in
                         Task { await bridge?.setOpenWithPanelOpen(open) }
@@ -32,12 +31,10 @@ struct MicroManagerApp: App {
                     }
                     bridge.onOpenWithKey = { openWith.handleKey() }
 
-                    // Key 7 opens the focused agent's directory in Tower. The
-                    // land flow that used to own this key is still in the repo,
-                    // in LandPanel and GitButler.landPlan; it is only unwired.
-                    bridge.onTowerKey = { [weak bridge] in
-                        Tower.launch { message in bridge?.noteError(message) }
-                    }
+                    // Key 7 closes a Herdr tab and needs nothing from the app:
+                    // the bridge owns both presses and the light between them.
+                    // Tower, which used to own the key, is still in the repo and
+                    // still on key 6's picker.
 
                     let voice = VoiceController.shared
                     voice.onActiveChange = { [weak bridge] active in

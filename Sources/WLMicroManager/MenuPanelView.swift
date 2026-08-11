@@ -103,7 +103,7 @@ struct MenuPanelView: View {
         let isBound = Pad.boundKeyIDs.contains(index)
         let isOpenWithKey = index == Pad.openWithKeyID
         let isTabCycleKey = index == Pad.tabCycleKeyID
-        let isTowerKey = index == Pad.towerKeyID
+        let isCloseTabKey = index == Pad.closeTabKeyID
         let macroText = bridge.keyBindings.text(for: index)
         let role: KeyRole? = macroText == nil ? KeyRole(key: index) : nil
         // Key index and agent slot are the same row-major ordering, but the
@@ -117,8 +117,11 @@ struct MenuPanelView: View {
                 OpenWithPanelController.shared.handleKey()
             } else if isTabCycleKey {
                 Task { await bridge.cycleTabs() }
-            } else if isTowerKey {
-                Tower.launch { bridge.noteError($0) }
+            } else if isCloseTabKey {
+                // The same entry point the pad uses, so a click arms and a
+                // second click confirms. One rule for the destructive key,
+                // whichever surface you press it from.
+                bridge.handleKeyPress(Pad.closeTabKeyID)
             } else if let macroText {
                 Task { await bridge.injectPrompt(macroText) }
             } else if role == .voice {
@@ -140,10 +143,10 @@ struct MenuPanelView: View {
         .buttonStyle(.plain)
         // Esc and Enter are the exception: clicking them would post the
         // keystroke into this panel, which is not what anyone means by it.
-        .disabled(agent == nil && !isOpenWithKey && !isTabCycleKey && !isTowerKey
+        .disabled(agent == nil && !isOpenWithKey && !isTabCycleKey && !isCloseTabKey
                   && macroText == nil && role != .voice && role != .newTab)
         .help(helpText(index, agent: agent, isOpenWithKey: isOpenWithKey,
-                       isTabCycleKey: isTabCycleKey, isTowerKey: isTowerKey,
+                       isTabCycleKey: isTabCycleKey, isCloseTabKey: isCloseTabKey,
                        macroText: macroText, role: role))
     }
 
@@ -176,13 +179,17 @@ struct MenuPanelView: View {
         agent: HerdrAgent?,
         isOpenWithKey: Bool,
         isTabCycleKey: Bool,
-        isTowerKey: Bool,
+        isCloseTabKey: Bool,
         macroText: String?,
         role: KeyRole?
     ) -> String {
         if isOpenWithKey { return "Open the focused agent's directory in Finder, Zed or Tower" }
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
-        if isTowerKey { return "Open the focused agent's directory in Tower" }
+        if isCloseTabKey {
+            return bridge.closeTabArmed
+                ? "Press again to close the focused Herdr tab — Esc cancels"
+                : "Close the focused Herdr tab (two presses)"
+        }
         if let macroText { return "Type: \(macroText)" }
         if let role { return role.help }
         if let agent { return "\(agent.shortName) — \(agent.status)" }
