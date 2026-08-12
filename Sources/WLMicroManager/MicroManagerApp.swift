@@ -67,7 +67,16 @@ struct MicroManagerApp: App {
                     }
                     bridge.onDial = { step in tune.handleDial(step) }
                     bridge.onDialPress = { tune.handleDialPress() }
-                    bridge.onJoystick = { direction in tune.handleJoystick(direction) }
+                    // The joystick drives the radial menu, reading its whole
+                    // position rather than four bound sectors.
+                    // `tune.handleJoystick` and the model cycling behind it are
+                    // intact and tested, just unwired — and on this pad they
+                    // were dead anyway: its keymap reports the joystick as
+                    // `type: VENDOR` with no sectors, so AG15–AG18 were never
+                    // bound and no deflection ever reached them.
+                    bridge.onAim = { angle, distance in
+                        RadialMenuController.shared.handle(angle: angle, distance: distance)
+                    }
                     PiModelPanelController.shared.onError = { [weak bridge] message in
                         bridge?.noteError(message)
                     }

@@ -127,6 +127,17 @@ public enum OAI {
         return Int(name.dropFirst(2))
     }
 
+    /// A JSON number, however it deserialised. The joystick's own reports are
+    /// the reason this exists: a full deflection arrives as `"d":1`, which
+    /// `JSONSerialization` hands back as an `Int`, so an `as? Double` cast
+    /// drops exactly the report that matters most.
+    public static func number(_ value: Any?) -> Double? {
+        if let double = value as? Double { return double }
+        if let int = value as? Int { return Double(int) }
+        if let number = value as? NSNumber { return number.doubleValue }
+        return nil
+    }
+
     public static func threadsParams(_ threads: [Thread]) -> [[String: Any]] {
         threads.map(\.wire)
     }

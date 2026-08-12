@@ -64,7 +64,19 @@ public final class BridgeController: ObservableObject {
     /// Called when the dial is pressed in.
     public var onDialPress: (() -> Void)?
     /// Called when the joystick enters a cardinal sector.
+    ///
+    /// Unwired from the pad in favour of `onAim`, which reads the joystick's
+    /// radial channel instead of four bound sectors. Kept because the model
+    /// cycling behind it is intact — see `TuneController.claudeModel` — and
+    /// because a pad whose keymap *is* `RADIAL` can still deliver these.
     public var onJoystick: ((Pad.JoystickDirection) -> Void)?
+    /// Called with the joystick's raw position: angle as a fraction of a turn
+    /// with 0 east climbing counter-clockwise, distance from centre 0 to 1.
+    ///
+    /// This is the whole joystick, not four sectors of it, which is what lets a
+    /// radial menu show eight directions and where between them you are
+    /// pointing. See `RadialAim` for what the stream means.
+    public var onAim: ((Double, Double) -> Void)?
     /// Consulted before any key does its normal job. Returning true consumes
     /// the press — this is how a modal window can turn every other key into
     /// "cancel" without those keys also doing their usual work.
@@ -123,11 +135,22 @@ public final class BridgeController: ObservableObject {
             if self.issuedIDs.remove(id) == nil { self.contendingClient = true }
         }
         device.onNotification = { [weak self] method, params in
-            guard let self, method == OAI.notifyHID else { return }
-            guard let dict = params as? [String: Any] else { return }
-            guard (dict["act"] as? Int) == 1 else { return }   // press, not release
-            guard let index = OAI.agIndex(dict["k"] as? String) else { return }
-            self.handleKeyPress(index)
+            guard let self, let dict = params as? [String: Any] else { return }
+            switch method {
+            case OAI.notifyHID:
+                guard (dict["act"] as? Int) == 1 else { return }   // press, not release
+                guard let index = OAI.agIndex(dict["k"] as? String) else { return }
+                self.handleKeyPress(index)
+            case OAI.notifyJoystick:
+                // Both fields or nothing: a half-decoded position would aim at
+                // an angle with no distance to say whether it counts.
+                guard let angle = OAI.number(dict["a"]),
+                      let distance = OAI.number(dict["d"])
+                else { return }
+                self.onAim?(angle, distance)
+            default:
+                return
+            }
         }
     }
 

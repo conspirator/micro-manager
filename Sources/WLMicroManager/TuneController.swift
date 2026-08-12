@@ -3,6 +3,15 @@ import WLKit
 
 /// The dial and joystick: effort and model for whichever agent has focus.
 ///
+/// **The joystick half of this is unwired.** It now drives a radial menu instead
+/// — see `RadialMenuController` — which reads the stick's whole position rather
+/// than four bound sectors, and can show you eight slices and where between them
+/// you are pointing. `handleJoystick` and the model cycling below are intact and
+/// still tested, in the way `LandPanel` was kept when its key was reassigned;
+/// nothing calls them. On this pad they were dead regardless: its keymap reports
+/// the joystick as `type: VENDOR` with no sectors, so AG15–AG18 were never bound
+/// and no deflection ever arrived.
+///
 /// Three agents, three mechanisms, because each one only accepts what it
 /// accepts. Pi gets the dial to itself: `PiModelPanelController` puts its model
 /// list on screen and the click walks `ctrl+p` to the row you chose, so nothing

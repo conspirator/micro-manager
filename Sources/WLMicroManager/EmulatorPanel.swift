@@ -47,6 +47,8 @@ final class EmulatorWindowController: NSObject, NSWindowDelegate {
 
 struct EmulatorView: View {
     @ObservedObject var emulator: PadEmulator
+    /// Where the dragged stick is, in points from the centre of its well.
+    @State private var puck: CGSize = .zero
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -150,16 +152,56 @@ struct EmulatorView: View {
         return "Key \(key) — \(hexString(state.color)), \(state.effect.label.lowercased())"
     }
 
+    /// A stick you can drag, emitting the same `v.oai.rad` stream the hardware
+    /// pushes: angle as a fraction of a turn with 0 east climbing
+    /// counter-clockwise, distance 0 to 1, and a hard zero on release. The four
+    /// arrows it replaced pressed AG15–AG18, which nothing reads any more — and
+    /// which this pad never bound in the first place.
     private var joystick: some View {
-        VStack(spacing: 3) {
-            arrow("chevron.up", Pad.joyNorthID)
-            HStack(spacing: 3) {
-                arrow("chevron.left", Pad.joyWestID)
-                Circle().fill(Color.secondary.opacity(0.18)).frame(width: 22, height: 22)
-                arrow("chevron.right", Pad.joyEastID)
-            }
-            arrow("chevron.down", Pad.joySouthID)
-        }
+        let radius: CGFloat = 27
+        return Circle()
+            .fill(Color.secondary.opacity(0.14))
+            .frame(width: radius * 2, height: radius * 2)
+            .overlay(
+                Circle()
+                    .fill(Color.accentColor.opacity(0.85))
+                    .frame(width: 12, height: 12)
+                    .offset(x: puck.width, y: puck.height)
+            )
+            .contentShape(Circle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let clamped = clamp(value.translation, to: radius)
+                        puck = clamped
+                        emulator.deflectJoystick(
+                            angle: turns(of: clamped),
+                            distance: min(1, hypot(clamped.width, clamped.height) / radius)
+                        )
+                    }
+                    .onEnded { _ in
+                        puck = .zero
+                        emulator.deflectJoystick(angle: 0, distance: 0)
+                    }
+            )
+            .help("Joystick — drag to deflect, release to select")
+    }
+
+    private func clamp(_ translation: CGSize, to radius: CGFloat) -> CGSize {
+        let length = hypot(translation.width, translation.height)
+        guard length > radius else { return translation }
+        return CGSize(
+            width: translation.width / length * radius,
+            height: translation.height / length * radius
+        )
+    }
+
+    /// Screen y grows downwards and the pad's angle climbs counter-clockwise, so
+    /// the sign flips on the way out.
+    private func turns(of translation: CGSize) -> Double {
+        let radians = atan2(-Double(translation.height), Double(translation.width))
+        let turns = radians / (2 * .pi)
+        return turns - floor(turns)
     }
 
     private func arrow(_ symbol: String, _ key: Int) -> some View {

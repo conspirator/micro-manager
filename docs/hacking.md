@@ -545,6 +545,14 @@ The joystick is radial: eight sectors, each with an angle range `a1..a2`
 expressed as a **fraction of a full turn**, where **0 is east and the angle
 increases counter-clockwise**.
 
+**Measured correction, Codex Micro:** zero is east as described, but the angle
+climbs **clockwise** on this pad — a push straight up reports about 0.75, not
+0.25. East and west are unaffected, so the error shows up as north and south
+being swapped and nothing else. The direction column below therefore reads
+backwards for everything except east and west: 0.125 is physically south-east,
+so the stock `KC_P7` at that angle is not the NE key its name suggests. Micro
+Manager corrects this once, in `RadialAim.compassTurns`.
+
 | sector centre | direction | stock keycode |
 |---|---|---|
 | 0.000 | east  | `KC_P6` |

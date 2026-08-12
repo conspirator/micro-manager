@@ -83,8 +83,9 @@ Both Esc/Enter and the voice key need **Accessibility** on top of Input
 Monitoring, since they synthesise key events.
 
 **The dial** picks the model on a pi pane and tunes reasoning effort on Claude
-and Codex. **The joystick** switches model on Claude and Codex: it puts the model
-list on screen, north and south move, east confirms, west cancels.
+and Codex. **The joystick** opens a radial menu: eight slices on a compass, aim
+by pushing the stick and select by letting go, with south as cancel. Nothing is
+bound to the other seven yet.
 
 ### The dial, on a pi pane
 
@@ -187,8 +188,8 @@ passes it on.
 
 Tick **Emulate the pad** in the panel and a window opens with a virtual Creator
 Micro 2 in it. The bridge drives its lights exactly as it drives the hardware,
-and clicking a key — or the dial, or the joystick — sends the same
-`v.oai.hid` report back, so the whole loop works with nothing plugged in.
+and clicking a key — or the dial, or dragging the joystick — sends the same
+reports back, so the whole loop works with nothing plugged in.
 
 ```bash
 WL_EMULATE=1 swift run WLMicroManager    # start emulated, no clicking required
@@ -234,9 +235,10 @@ agent to a stray config line would be a poor trade. There are no defaults: every
 key has a role, and an empty string returns a key to it.
 
 `codex.models` is your copy of what Codex's own `/model` menu offers, in its
-order — the joystick steers that menu rather than owning it, so there is nothing
-to read it from. Pi needs no entry here: its list is read from pi's own
-`settings.json`.
+order — the joystick's old model cycling steered that menu rather than owning it,
+so there was nothing to read it from. That cycling is unwired now, so this entry
+and `claude.models` are read by nothing until a slice of the radial menu claims
+them. Pi needs no entry here: its list is read from pi's own `settings.json`.
 
 | variable | what it overrides |
 |---|---|
