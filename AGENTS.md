@@ -77,6 +77,42 @@ logs the state machine (`idle -> pressAndHold -> doubleTapLock -> idle`) if you
 need to watch it. That silent discard is what makes the light's state safe: when
 it drifts, the wasted press is the one Monologue throws away anyway.
 
+## Raycast ignores a chord without the fn bit
+
+The radial menu's five bound slices press Raycast's window-management hotkeys —
+ctrl+opt+cmd plus an arrow, or Page Down for Almost Maximize. Posting that chord
+the way `SystemKeyTap` posts Esc does **nothing at all**: no window moves, no
+error, and a listen-only tap confirms the event landed with the right key code
+and the right modifier flags. The missing piece is `.maskSecondaryFn`.
+
+Every key in that table is a function key, so a real press sets fn, and Raycast
+matches the flags it recorded when you assigned the hotkey. A chord without fn is
+one no keyboard could have produced. Measured both ways on this machine:
+`0x001C0000` is ignored, `0x009C0000` moves the window.
+
+Ruled out while finding that, so nobody pays for them twice: the event source
+state (`.hidSystemState` and `.combinedSessionState` behave alike), the
+`numericPad` bit, the device-dependent left/right modifier bits (`0x29`), and
+posting real `flagsChanged` events around the key instead of setting flags on the
+keydown. System Events via AppleScript works, which is what made the difference
+visible: dump every `CGEventField` of a chord that works beside one that does
+not, and the answer is in the flags.
+
+Two things follow. Raycast owns the layouts deliberately — the pad presses the
+same chords you press, so it cannot drift from your keyboard — and **nothing
+reports whether Raycast acted**. If a slice appears to do nothing, suspect
+Raycast quit or a hotkey reassigned before suspecting this app. Note also that
+the Raycast running on this machine is **Raycast Beta** (`com.raycast-x.macos`);
+plain Raycast is present only as an app extension, so its preferences are the
+wrong file to read.
+
+To re-verify all five chords after a Raycast update: reset a window to a known
+off-half position, post each chord with fn, and read the frame back. Halves land
+at 1280 wide, the thirds at 1706 (from 0 and from 854), Almost Maximize inset to
+2304x1268. Measure with System Events rather than `kAXFocusedWindowAttribute` —
+AX handed back a different window's frame and reported no movement while the
+window on screen had moved.
+
 ## Driving pi from the pad
 
 The dial picks the model on a pi pane. Everything below was read out of

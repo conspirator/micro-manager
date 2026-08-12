@@ -77,6 +77,11 @@ struct MicroManagerApp: App {
                     bridge.onAim = { angle, distance in
                         RadialMenuController.shared.handle(angle: angle, distance: distance)
                     }
+                    // Five slices press a Raycast hotkey, which needs the same
+                    // Accessibility grant Esc and Enter do.
+                    RadialMenuController.shared.onError = { [weak bridge] message in
+                        bridge?.noteError(message)
+                    }
                     PiModelPanelController.shared.onError = { [weak bridge] message in
                         bridge?.noteError(message)
                     }

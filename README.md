@@ -84,8 +84,24 @@ Monitoring, since they synthesise key events.
 
 **The dial** picks the model on a pi pane and tunes reasoning effort on Claude
 and Codex. **The joystick** opens a radial menu: eight slices on a compass, aim
-by pushing the stick and select by letting go, with south as cancel. Nothing is
-bound to the other seven yet.
+by pushing the stick and select by letting go, with south as cancel. Five slices
+move the frontmost window by pressing the Raycast hotkey you would press by
+hand:
+
+| slice | layout | chord |
+| --- | --- | --- |
+| W | Left Half | ctrl+opt+cmd+← |
+| E | Right Half | ctrl+opt+cmd+→ |
+| NW | First Two Thirds | ctrl+opt+cmd+↑ |
+| NE | Last Two Thirds | ctrl+opt+cmd+↓ |
+| N | Almost Maximize | ctrl+opt+cmd+Page Down |
+
+SW and SE are unbound and draw in grey, like cancel. Raycast owns the layouts on
+purpose: pressing the same chords means the pad cannot disagree with your
+keyboard about where the left half is. The chords live in `WindowLayout`, and
+since they are Raycast's hotkeys rather than defaults, changing one there means
+changing one line here. Like Esc, Enter and the voice key, this needs
+**Accessibility**.
 
 ### The dial, on a pi pane
 

@@ -13,8 +13,10 @@ import WLKit
 /// a stick held at centre and a stick the spring returned read identically and
 /// the hold is silent. See `RadialAim` for the measurements behind that.
 ///
-/// Nothing is bound to the other seven yet. This is the panel and the gesture;
-/// what a slice does comes next.
+/// Five slices press a Raycast window-management hotkey, from the one table in
+/// `WindowLayout`; the two lower diagonals are unbound. Nothing here can tell
+/// whether Raycast acted on the chord, so a slice that appears to do nothing is
+/// most likely Raycast quit or a hotkey reassigned.
 @MainActor
 final class RadialMenuController {
 
@@ -26,6 +28,10 @@ final class RadialMenuController {
     private static let linger: TimeInterval = 0.8
 
     private static let size = CGSize(width: 320, height: 320)
+
+    /// Accessibility denial is the realistic failure and it has a message worth
+    /// reading, so it goes the same way every other controller's does.
+    var onError: ((String) -> Void)?
 
     private let model = RadialMenuModel()
     private var aim = RadialAim()
@@ -59,8 +65,22 @@ final class RadialMenuController {
                 model.aimed = nil
                 model.committed = direction
                 scheduleClose()
+                perform(direction)
             case .sleep:
                 close()
+            }
+        }
+    }
+
+    /// Presses the slice's chord. The panel never takes focus, so the window you
+    /// were looking at is still frontmost and Raycast acts on it.
+    private func perform(_ direction: RadialAim.Direction) {
+        guard let layout = WindowLayout.forDirection(direction) else { return }
+        Task { [weak self] in
+            do {
+                try await layout.tap.post()
+            } catch {
+                self?.onError?(error.localizedDescription)
             }
         }
     }
@@ -172,11 +192,14 @@ struct RadialMenuView: View {
     }
 
     private func fill(_ direction: RadialAim.Direction) -> Color {
+        // Grey for anything that does nothing — cancel and the two unbound
+        // diagonals alike, read from the same table the labels come from.
+        let inert = WindowLayout.forDirection(direction) == nil
         if model.committed == direction {
-            return direction == .south ? Self.muted : Self.accent
+            return inert ? Self.muted : Self.accent
         }
         if model.aimed == direction {
-            return direction == .south
+            return inert
                 ? Self.muted.opacity(0.22)
                 : Self.accent.opacity(0.20)
         }
@@ -187,10 +210,18 @@ struct RadialMenuView: View {
         let radius = (Self.inner + Self.outer) / 2
         let radians = direction.centreTurns * 2 * .pi
         let selected = model.committed == direction
+        // A layout name is several words where a compass letter was one glyph,
+        // and a wedge is only about 69pt of arc at this radius, so names wrap
+        // inside a fixed width instead of running over their neighbours.
+        let named = WindowLayout.forDirection(direction) != nil
         return Text(Self.title(direction))
-            .font(.system(size: direction == .south ? 12 : 15, weight: selected ? .bold : .medium,
+            .font(.system(size: named ? 11 : (direction == .south ? 12 : 15),
+                          weight: selected ? .bold : .medium,
                           design: .rounded))
+            .multilineTextAlignment(.center)
+            .lineSpacing(-1)
             .foregroundStyle(colour(direction, selected: selected))
+            .frame(width: 68)
             .position(
                 x: 160 + radius * cos(radians),
                 y: 160 - radius * sin(radians)
@@ -199,14 +230,16 @@ struct RadialMenuView: View {
 
     private func colour(_ direction: RadialAim.Direction, selected: Bool) -> Color {
         if selected { return .white }
-        if direction == .south { return Self.muted }
+        if WindowLayout.forDirection(direction) == nil { return Self.muted }
         return model.aimed == direction ? Self.accent : Self.ink.opacity(0.75)
     }
 
-    /// South is cancel; the rest are still just their directions, because
-    /// nothing is bound to them yet and a made-up name would be a lie.
+    /// Raycast's own name for the layout a slice asks for. South is the menu's
+    /// cancel, and the two unbound diagonals keep their compass letters, because
+    /// a made-up name would be a lie.
     private static func title(_ direction: RadialAim.Direction) -> String {
-        direction == .south ? "Cancel" : direction.label
+        if let layout = WindowLayout.forDirection(direction) { return layout.name }
+        return direction == .south ? "Cancel" : direction.label
     }
 
     // MARK: - Position
@@ -253,24 +286,34 @@ struct RadialMenuView: View {
     private var centre: some View {
         VStack(spacing: 1) {
             Text(centreTitle)
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.75)
+                .lineLimit(2)
                 .foregroundStyle(model.committed != nil ? Self.accent : Self.ink)
             Text(centreCaption)
                 .font(.system(size: 9, weight: .medium, design: .rounded))
                 .foregroundStyle(Self.muted)
         }
-        .frame(width: Self.inner * 1.8)
+        // Just inside the hole in the middle of the wedges, so a wrapped layout
+        // name does not run underneath them.
+        .frame(width: Self.inner * 2)
     }
 
     private var centreTitle: String {
         if let committed = model.committed {
-            return committed == .south ? "Cancelled" : committed.label
+            return committed == .south ? "Cancelled" : Self.title(committed)
         }
         return model.aimed.map(Self.title) ?? "—"
     }
 
+    /// Honest about the three slices that press nothing: "selected" under an
+    /// unbound diagonal would read as a layout that failed.
     private var centreCaption: String {
-        if model.committed != nil { return "selected" }
+        if let committed = model.committed {
+            if committed == .south { return "nothing sent" }
+            return WindowLayout.forDirection(committed) == nil ? "nothing bound" : "sent"
+        }
         return model.aimed == nil ? "push to aim" : "let go to select"
     }
 }
