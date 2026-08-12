@@ -106,12 +106,19 @@ the Raycast running on this machine is **Raycast Beta** (`com.raycast-x.macos`);
 plain Raycast is present only as an app extension, so its preferences are the
 wrong file to read.
 
-To re-verify all five chords after a Raycast update: reset a window to a known
-off-half position, post each chord with fn, and read the frame back. Halves land
-at 1280 wide, the thirds at 1706 (from 0 and from 854), Almost Maximize inset to
-2304x1268. Measure with System Events rather than `kAXFocusedWindowAttribute` —
-AX handed back a different window's frame and reported no movement while the
-window on screen had moved.
+To re-verify all five chords after a Raycast update, run
+`scripts/verify-raycast-chords.sh`: it posts each chord the way `WindowLayout`
+does and reads the frame back, printing `IGNORED` for a chord that changed
+nothing. Halves land at 1280 wide, the thirds at 1706 (from 0 and from 854),
+Almost Maximize inset to 2304x1268. Measure with System Events rather than
+`kAXFocusedWindowAttribute` — AX handed back a different window's frame and
+reported no movement while the window on screen had moved, which is what made the
+first two probes lie.
+
+**Driven from the pad and confirmed on 2026-08-12.** A physical push to W landed
+Left Half, so the compass mapping, `RadialAim.handedness` and the corrected angle
+all agree with the hardware. That settles the joystick half of the rotation
+question this file raises twice; the dial is still unproven.
 
 ## Driving pi from the pad
 
@@ -177,11 +184,13 @@ obvious from outside:
 3. **`debugAccumulator` still clears at 4096 characters.** Same shape as the RPC
    bug that was just fixed, on the device-log channel. Unproven, but a long line
    would vanish the same way.
-4. **The model panel has not been driven from the hardware yet.** The keymap
-   change is verified on the pad, but a physical turn and click were never
-   watched arriving, so the direction of rotation and the `AG19` notification are
-   still unproven at the app level. The emulator cannot answer either: it always
-   binds its keymap, so every action works there whatever the wire does.
+4. **The dial has not been driven from the hardware yet.** Its keymap change is
+   verified on the pad, but a physical turn and click were never watched
+   arriving, so the direction of rotation and the `AG19` notification are still
+   unproven at the app level. The joystick no longer has this problem — a push to
+   W landed Left Half through Raycast — but the emulator cannot answer for the
+   dial either: it always binds its keymap, so every action works there whatever
+   the wire does.
 5. **Extracting `KeyTakingPanel` out of key 6 needs its two hand-checks.** Esc
    returning you to the app you came from, and the strip dismissing when it loses
    key status, are the two behaviours no test here covers — and they are exactly
