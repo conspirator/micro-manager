@@ -56,7 +56,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | open | opens the focused agent's directory in Finder, Zed or Tower |
 | close tab | closes the focused Herdr tab, on two presses |
 | tabs | cycles the tabs of the focused Herdr window |
-| new tab | opens a Herdr tab beside the focused agent |
+| new tab | opens a Herdr tab beside the focused agent and starts pi in it |
 
 **Row 4** is Esc — it taps Esc wherever the focus is — the voice key, which taps
 right control to start and stop [Monologue](https://www.monologue.to), and Enter.

@@ -572,20 +572,39 @@ public final class BridgeController: ObservableObject {
         }
     }
 
-    /// Opens a fresh Herdr tab beside the focused agent, focuses it, and brings
-    /// the terminal forward — same reason `focusSlot` does: a tab you cannot see
-    /// is indistinguishable from a key that did nothing.
+    /// Opens a fresh Herdr tab beside the focused agent, starts pi in it,
+    /// focuses it, and brings the terminal forward — same reason `focusSlot`
+    /// does: a tab you cannot see is indistinguishable from a key that did
+    /// nothing.
+    ///
+    /// A tab with no agent in it is a shell prompt, which is not what this key
+    /// is for; starting pi is the point of it. If the start fails the tab is
+    /// still there and still focused, so the error is reported and the terminal
+    /// still comes forward — a shell is a worse outcome than pi, not a lost one.
     public func newTab() async {
         do {
             // A missing focus is not a failure: `createTabParams` falls back to
             // Herdr's own defaults, and a dead socket surfaces on the create.
             let focused = try? await HerdrClient.focusedAgent()
-            try await HerdrClient.createTab(beside: focused)
-            raiseTerminal()
+            let pane = try await HerdrClient.createTab(beside: focused)
+            defer { raiseTerminal() }
+            guard let pane else {
+                lastError = "Herdr made the tab but named no pane to start pi in."
+                return
+            }
+            try await HerdrClient.startAgent(
+                kind: BridgeController.newTabAgentKind,
+                paneID: pane,
+                name: BridgeController.newTabAgentKind
+            )
         } catch {
             lastError = error.localizedDescription
         }
     }
+
+    /// The agent the new-tab key launches. One of `agent.start`'s supported
+    /// kinds; Herdr resolves it to the executable itself.
+    public static let newTabAgentKind = "pi"
 
     /// Repaints the open-with key. Called by the app when the strip opens or
     /// closes, so the key reflects what is actually on screen.

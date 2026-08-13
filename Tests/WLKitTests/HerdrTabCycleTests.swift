@@ -93,3 +93,38 @@ extension HerdrTabCycleTests {
         XCTAssertNil(params["cwd"])
     }
 }
+
+// MARK: - Starting an agent in the new tab
+
+extension HerdrTabCycleTests {
+
+    /// The pane to start pi in comes back on the `tab.create` reply itself, as
+    /// `root_pane`. Reading it there is what avoids a second round trip and a
+    /// guess at which pane the new tab owns.
+    func testRootPaneIDIsReadFromTheTabCreateReply() {
+        let reply: [String: Any] = [
+            "type": "tab_created",
+            "tab": ["tab_id": "w6:t7", "workspace_id": "w6", "number": 7],
+            "root_pane": ["pane_id": "w6:p7", "tab_id": "w6:t7"],
+        ]
+        XCTAssertEqual(HerdrClient.rootPaneID(in: reply), "w6:p7")
+    }
+
+    /// A reply without a pane is not a crash and not a wrong pane: the tab
+    /// exists, so the key half-worked, and the caller reports that instead of
+    /// starting pi somewhere unrelated.
+    func testRootPaneIDIsNilWhenTheReplyHasNoPane() {
+        XCTAssertNil(HerdrClient.rootPaneID(in: ["type": "tab_created"]))
+        XCTAssertNil(HerdrClient.rootPaneID(in: ["root_pane": ["tab_id": "w6:t7"]]))
+        XCTAssertNil(HerdrClient.rootPaneID(in: ["root_pane": ["pane_id": ""]]))
+    }
+
+    /// `agent.start` requires all three of `name`, `kind` and `pane_id`; it
+    /// rejects the call outright when one is missing.
+    func testStartAgentParamsCarryNameKindAndPane() {
+        let params = HerdrClient.startAgentParams(kind: "pi", paneID: "w6:p7", name: "pi")
+        XCTAssertEqual(params["kind"] as? String, "pi")
+        XCTAssertEqual(params["pane_id"] as? String, "w6:p7")
+        XCTAssertEqual(params["name"] as? String, "pi")
+    }
+}

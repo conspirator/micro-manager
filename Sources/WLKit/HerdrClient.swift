@@ -249,9 +249,41 @@ public enum HerdrClient {
         return params
     }
 
-    /// Opens a new tab beside the focused agent and focuses it.
-    public static func createTab(beside agent: HerdrAgent?) async throws {
-        _ = try await request("tab.create", params: createTabParams(beside: agent))
+    /// Opens a new tab beside the focused agent, focuses it, and returns the
+    /// pane the tab was created with — `root_pane` on the reply, which is the
+    /// pane an agent can be started in without a second round trip.
+    @discardableResult
+    public static func createTab(beside agent: HerdrAgent?) async throws -> String? {
+        let result = try await request("tab.create", params: createTabParams(beside: agent))
+        return rootPaneID(in: result)
+    }
+
+    /// The pane a freshly created tab owns. Nil rather than an empty string:
+    /// `agent.start` would take `""` and fail with a less obvious message.
+    static func rootPaneID(in result: [String: Any]) -> String? {
+        guard let pane = result["root_pane"] as? [String: Any],
+              let id = pane["pane_id"] as? String, !id.isEmpty
+        else { return nil }
+        return id
+    }
+
+    /// Params for `agent.start`. All three fields are required — Herdr answers
+    /// `missing field` for any one of them. `name` is only what Herdr's own
+    /// panel labels the agent; the pad reads agents by working directory.
+    static func startAgentParams(kind: String, paneID: String, name: String) -> [String: Any] {
+        ["name": name, "kind": kind, "pane_id": paneID]
+    }
+
+    /// Launches a supported agent in a pane sitting at its shell prompt.
+    ///
+    /// The socket call returns as soon as the process is spawned
+    /// (`launch_pending: true`), unlike `herdr agent start` on the command
+    /// line, which blocks on interactive readiness — so the default request
+    /// timeout is enough and the pad's key does not hang for pi's startup.
+    public static func startAgent(kind: String, paneID: String, name: String) async throws {
+        _ = try await request(
+            "agent.start", params: startAgentParams(kind: kind, paneID: paneID, name: name)
+        )
     }
 
     /// Injects key chords into a pane, crossterm-style names ("ctrl+alt+v",

@@ -167,7 +167,7 @@ struct MenuPanelView: View {
         var help: String {
             switch self {
             case .esc: return "Esc"
-            case .newTab: return "New Herdr tab, beside the focused agent"
+            case .newTab: return "New Herdr tab running pi, beside the focused agent"
             case .voice: return "Right control — start or stop Monologue"
             case .enter: return "Enter"
             }
