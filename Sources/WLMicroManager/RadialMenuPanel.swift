@@ -145,16 +145,25 @@ struct RadialMenuView: View {
     /// Just outside the wedges, where the position dot rides.
     private static let rim: CGFloat = 146
 
-    private static let accent = Color(red: 0.24, green: 0.47, blue: 0.98)
-    private static let ink = Color(red: 0.10, green: 0.12, blue: 0.16)
-    private static let muted = Color(red: 0.54, green: 0.57, blue: 0.62)
-    private static let quiet = Color(white: 0.945)
-    private static let hairline = Color(red: 0.894, green: 0.906, blue: 0.925)
+    /// Dark, like every other panel in this app: `.black.opacity(0.55)` over
+    /// `.ultraThinMaterial`, as `PiModelPanel` and `OpenWithPanel` do it. The
+    /// blue is lighter than the light-mode one was — 0.24/0.47/0.98 on a dark
+    /// wedge is a fill you can barely tell from the unaimed grey.
+    private static let accent = Color(red: 0.40, green: 0.64, blue: 1.0)
+    private static let ink = Color.white
+    private static let muted = Color.white.opacity(0.45)
+    private static let quiet = Color.white.opacity(0.09)
+    /// Committed-but-unbound. Opaque rather than a white alpha, because the
+    /// label on top of it is white and a translucent grey leaves it unreadable.
+    private static let inert = Color(white: 0.40)
+    private static let hairline = Color.white.opacity(0.10)
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.white)
+                .fill(.black.opacity(0.55))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18,
+                                                                     style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                         .strokeBorder(Self.hairline, lineWidth: 1)
@@ -194,14 +203,14 @@ struct RadialMenuView: View {
     private func fill(_ direction: RadialAim.Direction) -> Color {
         // Grey for anything that does nothing — cancel and the two unbound
         // diagonals alike, read from the same table the labels come from.
-        let inert = WindowLayout.forDirection(direction) == nil
+        let unbound = WindowLayout.forDirection(direction) == nil
         if model.committed == direction {
-            return inert ? Self.muted : Self.accent
+            return unbound ? Self.inert : Self.accent
         }
         if model.aimed == direction {
-            return inert
-                ? Self.muted.opacity(0.22)
-                : Self.accent.opacity(0.20)
+            return unbound
+                ? Color.white.opacity(0.18)
+                : Self.accent.opacity(0.28)
         }
         return Self.quiet
     }
@@ -229,9 +238,17 @@ struct RadialMenuView: View {
     }
 
     private func colour(_ direction: RadialAim.Direction, selected: Bool) -> Color {
-        if selected { return .white }
+        // Committed sits on the accent fill, which is light — black reads on it
+        // where white did on the old dark-blue one.
+        if selected {
+            return WindowLayout.forDirection(direction) == nil
+                ? .white
+                : Color(white: 0.06)
+        }
         if WindowLayout.forDirection(direction) == nil { return Self.muted }
-        return model.aimed == direction ? Self.accent : Self.ink.opacity(0.75)
+        // White, not accent: an aimed wedge is already tinted blue, and blue text
+        // on it was the one label in here you had to squint at.
+        return model.aimed == direction ? .white : Self.ink.opacity(0.85)
     }
 
     /// Raycast's own name for the layout a slice asks for. South is the menu's
@@ -255,7 +272,7 @@ struct RadialMenuView: View {
     private var needle: some View {
         let length = max(2, Self.outer * CGFloat(min(model.distance, 1)))
         return Capsule()
-            .fill(Self.accent.opacity(0.35))
+            .fill(Self.accent.opacity(0.45))
             .frame(width: length, height: 3)
             .offset(x: length / 2)
             .rotationEffect(.radians(-model.turns * 2 * .pi), anchor: .center)
@@ -278,7 +295,7 @@ struct RadialMenuView: View {
     private var readout: some View {
         Text(String(format: "a %.3f  d %.3f", model.reported, model.distance))
             .font(.system(size: 9, design: .monospaced))
-            .foregroundStyle(Self.muted.opacity(0.7))
+            .foregroundStyle(Color.white.opacity(0.35))
             .frame(width: 320, height: 320, alignment: .bottom)
             .padding(.bottom, 9)
     }
