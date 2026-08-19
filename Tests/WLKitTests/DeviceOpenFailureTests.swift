@@ -47,4 +47,26 @@ final class DeviceOpenFailureTests: XCTestCase {
         XCTAssertFalse(WLDevice.Failure.notFound.isPermissionDenied)
         XCTAssertFalse(WLDevice.Failure.noVendorCollection.isPermissionDenied)
     }
+
+    /// macOS 27 grants `IOHIDDeviceOpen` but denies `IOHIDDeviceSetReport` at
+    /// the kernel boundary, so the permission denial surfaces on a write, not
+    /// an open. The same two codes apply, so a denied write must read as a
+    /// permission problem too, or the pad lights freeze and the keys go dead
+    /// while the app shows only a hex code.
+    func testWriteNotPermittedReadsAsAPermissionProblem() {
+        let failure = WLDevice.Failure.writeFailed(kIOReturnNotPermitted)
+        XCTAssertTrue(failure.isPermissionDenied)
+    }
+
+    func testWriteNotPrivilegedReadsAsAPermissionProblem() {
+        let failure = WLDevice.Failure.writeFailed(kIOReturnNotPrivileged)
+        XCTAssertTrue(failure.isPermissionDenied)
+    }
+
+    /// A write refused for another reason, such as another client holding the
+    /// pad, is not a permission problem.
+    func testWriteExclusiveAccessIsNotAPermissionProblem() {
+        let failure = WLDevice.Failure.writeFailed(kIOReturnExclusiveAccess)
+        XCTAssertFalse(failure.isPermissionDenied)
+    }
 }

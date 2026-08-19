@@ -59,17 +59,28 @@ public final class WLDevice {
         case timeout(String)
         case rpc(String, String)
 
-        /// True when the open was refused by privacy policy rather than by the
-        /// device, so the caller can offer the grant instead of a hex code.
+        /// True when the open or a later write was refused by privacy policy
+        /// rather than by the device, so the caller can offer the grant
+        /// instead of a hex code.
         ///
         /// macOS has answered with both codes: `kIOReturnNotPrivileged`
         /// (0xE00002C1) on older systems, `kIOReturnNotPermitted` (0xE00002E2)
         /// on macOS 15. Recognising only the first is why a denied pad reported
         /// `IOHIDDeviceOpen failed (0xE00002E2)` and looked like broken
         /// hardware — the one failure mode this app most needs to name.
+        ///
+        /// On macOS 27 the open succeeds without the grant, but the kernel
+        /// denies `IOHIDDeviceSetReport` (and input report delivery) instead.
+        /// So the same denial now surfaces on a write: the lights freeze at
+        /// their last state and the keys go dead, with only a hex code shown.
+        /// Checking the write case too is what makes the permission UI fire.
         public var isPermissionDenied: Bool {
-            guard case .openFailed(let result) = self else { return false }
-            return result == kIOReturnNotPrivileged || result == kIOReturnNotPermitted
+            switch self {
+            case .openFailed(let result), .writeFailed(let result):
+                return result == kIOReturnNotPrivileged || result == kIOReturnNotPermitted
+            default:
+                return false
+            }
         }
 
         public var errorDescription: String? {
@@ -111,7 +122,9 @@ public final class WLDevice {
     public var onResponse: ((Int, Any?, String?) -> Void)?   // id, result, errorMessage
     public var onNotification: ((String, Any?) -> Void)?     // method, params
     public var onDeviceLog: ((String) -> Void)?
-    public var onWriteError: ((String, String) -> Void)?
+    /// The structured `Failure`, so a caller can ask `isPermissionDenied`
+    /// rather than parse the prose.
+    public var onWriteError: ((String, Failure) -> Void)?
     /// Every input report, before framing. Reports that do not match the
     /// channel framing are otherwise dropped, which hides any other traffic
     /// the device emits - key presses included.
@@ -297,9 +310,11 @@ public final class WLDevice {
             guard rc == kIOReturnSuccess else {
                 // Surface the failure rather than dropping it: a silent write
                 // error is indistinguishable from a device that ignores you.
-                let message = Failure.writeFailed(rc).errorDescription ?? "write failed"
-                onWriteError?(method, message)
-                completion?(nil, message)
+                // Pass the structured Failure so a caller can tell a permission
+                // denial from a device fault without matching on the text.
+                let failure = Failure.writeFailed(rc)
+                onWriteError?(method, failure)
+                completion?(nil, failure.errorDescription ?? "write failed")
                 return nil
             }
             offset += n

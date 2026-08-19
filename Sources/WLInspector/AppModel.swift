@@ -92,8 +92,8 @@ final class AppModel: ObservableObject {
             guard let self else { return }
             self.log(.notify, method, self.describeNotification(method, params))
         }
-        device.onWriteError = { [weak self] method, message in
-            self?.log(.error, "send failed: \(method)", message)
+        device.onWriteError = { [weak self] method, failure in
+            self?.log(.error, "send failed: \(method)", failure.localizedDescription)
         }
         device.onRawReport = { [weak self] reportID, bytes in
             guard let self else { return }

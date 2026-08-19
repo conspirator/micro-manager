@@ -152,6 +152,19 @@ public final class BridgeController: ObservableObject {
                 return
             }
         }
+        // On macOS 27 the open succeeds without Input Monitoring, but the
+        // kernel denies the SetReport (and input reports) instead. The denial
+        // then surfaces here rather than at openFailed, so treat a denied
+        // write the same as a refused open: raise the permission banner.
+        device.onWriteError = { [weak self] _, failure in
+            guard let self else { return }
+            if failure.isPermissionDenied {
+                permissionDenied = true
+                if !warnedPermission { warnedPermission = true; lastError = failure.localizedDescription }
+            } else {
+                lastError = failure.localizedDescription
+            }
+        }
     }
 
     // MARK: - Lifecycle
