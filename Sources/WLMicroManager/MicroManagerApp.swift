@@ -23,10 +23,10 @@ struct MicroManagerApp: App {
                     // Key 6 puts up the open-with strip, which is a window the
                     // bridge knows nothing about, so the two are joined here.
                     let openWith = OpenWithPanelController.shared
-                    openWith.onVisibilityChange = { [weak bridge] open in
+                    openWith.onVisibilityChange = { [weak bridge = bridge] open in
                         Task { await bridge?.setOpenWithPanelOpen(open) }
                     }
-                    openWith.onError = { [weak bridge] message in
+                    openWith.onError = { [weak bridge = bridge] message in
                         bridge?.noteError(message)
                     }
                     bridge.onOpenWithKey = { openWith.handleKey() }
@@ -37,10 +37,10 @@ struct MicroManagerApp: App {
                     // still on key 6's picker.
 
                     let voice = VoiceController.shared
-                    voice.onActiveChange = { [weak bridge] active in
+                    voice.onActiveChange = { [weak bridge = bridge] active in
                         Task { await bridge?.setVoiceActive(active) }
                     }
-                    voice.onError = { [weak bridge] message in
+                    voice.onError = { [weak bridge = bridge] message in
                         bridge?.noteError(message)
                     }
                     bridge.onVoiceKey = { voice.handleVoiceKey() }
@@ -48,7 +48,7 @@ struct MicroManagerApp: App {
                     // Esc and Enter. The bridge decides which key means what;
                     // posting the event is the app's job, since it holds the
                     // Accessibility grant.
-                    bridge.onSystemKey = { [weak bridge] tap in
+                    bridge.onSystemKey = { [weak bridge = bridge] tap in
                         Task {
                             do {
                                 try await tap.post()
@@ -59,21 +59,21 @@ struct MicroManagerApp: App {
                     }
 
                     let tune = TuneController.shared
-                    tune.onError = { [weak bridge] message in
+                    tune.onError = { [weak bridge = bridge] message in
                         bridge?.noteError(message)
                     }
-                    tune.bindings = { [weak bridge] in
+                    tune.bindings = { [weak bridge = bridge] in
                         bridge?.keyBindings ?? KeyBindings()
                     }
                     // The dial is the Mac's volume knob. `tune.handleDial` and
                     // `tune.handleDialPress`, the pi model picker behind them, are
                     // intact and tested, just unwired.
-                    bridge.onDial = { [weak bridge] step in
+                    bridge.onDial = { [weak bridge = bridge] step in
                         do { try SystemVolume.turn(step) } catch {
                             bridge?.noteError(error.localizedDescription)
                         }
                     }
-                    bridge.onDialPress = { [weak bridge] in
+                    bridge.onDialPress = { [weak bridge = bridge] in
                         do { try SystemVolume.toggleMute() } catch {
                             bridge?.noteError(error.localizedDescription)
                         }
@@ -90,10 +90,10 @@ struct MicroManagerApp: App {
                     }
                     // Five slices press a Raycast hotkey, which needs the same
                     // Accessibility grant Esc and Enter do.
-                    RadialMenuController.shared.onError = { [weak bridge] message in
+                    RadialMenuController.shared.onError = { [weak bridge = bridge] message in
                         bridge?.noteError(message)
                     }
-                    PiModelPanelController.shared.onError = { [weak bridge] message in
+                    PiModelPanelController.shared.onError = { [weak bridge = bridge] message in
                         bridge?.noteError(message)
                     }
 
