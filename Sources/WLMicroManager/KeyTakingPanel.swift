@@ -81,9 +81,10 @@ final class KeyTakingPanel {
     private func startWatching(_ panel: NSPanel) {
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self, self.isVisible else { return event }
-            let key = PanelKey(keyCode: event.keyCode, modifiers: event.modifierFlags)
-            return self.onKey?(key, event) ?? event
+            // Unwrap `onKey` first. With `onKey?(...) ?? event`, a handler's nil,
+            // which means swallow, becomes `event`, and the window beeps.
+            guard let self, self.isVisible, let onKey = self.onKey else { return event }
+            return onKey(PanelKey(keyCode: event.keyCode, modifiers: event.modifierFlags), event)
         }
         resignObserver = NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
