@@ -82,8 +82,11 @@ from the keyboard instead makes that drift, and the next press puts it right.
 Both Esc/Enter and the voice key need **Accessibility** on top of Input
 Monitoring, since they synthesise key events.
 
-**The dial** picks the model on a pi pane and tunes reasoning effort on Claude
-and Codex. **The joystick** opens a radial menu: eight slices on a compass, aim
+**The dial** is the Mac's volume knob. Turning right raises the volume, turning
+left lowers it, and pressing it in toggles mute. A turn while muted unmutes
+first. It presses the keyboard's own volume keys, so macOS shows its usual
+indicator, and like Esc and Enter it needs **Accessibility**. **The joystick**
+opens a radial menu: eight slices on a compass, aim
 by pushing the stick and select by letting go, with south as cancel. Five slices
 move the frontmost window by pressing the Raycast hotkey you would press by
 hand:
@@ -103,9 +106,11 @@ since they are Raycast's hotkeys rather than defaults, changing one there means
 changing one line here. Like Esc, Enter and the voice key, this needs
 **Accessibility**.
 
-### The dial, on a pi pane
+### The pi model picker, unwired
 
-Turning it puts pi's own model list on screen and moves a highlight. Nothing is
+Nothing on the pad opens this panel now, because the dial controls the volume.
+The code is intact and tested. When it was on the dial, turning put pi's own
+model list on screen and moved a highlight. Nothing is
 sent while you turn: the panel is a proposal. **Pressing the dial in** commits,
 by sending the pane as many `ctrl+p` chords as it takes to walk from the model pi
 reports to the one you chose. Esc dismisses, so does a click outside, losing

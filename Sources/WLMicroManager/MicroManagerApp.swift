@@ -65,8 +65,19 @@ struct MicroManagerApp: App {
                     tune.bindings = { [weak bridge] in
                         bridge?.keyBindings ?? KeyBindings()
                     }
-                    bridge.onDial = { step in tune.handleDial(step) }
-                    bridge.onDialPress = { tune.handleDialPress() }
+                    // The dial is the Mac's volume knob. `tune.handleDial` and
+                    // `tune.handleDialPress`, the pi model picker behind them, are
+                    // intact and tested, just unwired.
+                    bridge.onDial = { [weak bridge] step in
+                        do { try SystemVolume.turn(step) } catch {
+                            bridge?.noteError(error.localizedDescription)
+                        }
+                    }
+                    bridge.onDialPress = { [weak bridge] in
+                        do { try SystemVolume.toggleMute() } catch {
+                            bridge?.noteError(error.localizedDescription)
+                        }
+                    }
                     // The joystick drives the radial menu, reading its whole
                     // position rather than four bound sectors.
                     // `tune.handleJoystick` and the model cycling behind it are

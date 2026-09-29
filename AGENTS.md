@@ -56,7 +56,7 @@ two versions do not fight over flash.
 **Which way the dial turns is unproven.** The pre-app keymap had slot 0 as
 `KV_OAI_ENC_CC` and slot 1 as `KV_OAI_ENC_CW`, while `docs/hacking.md` documents
 the order as clockwise first. The app writes `AG13` to slot 0 and treats it as
-+1. If the model highlight moves the wrong way, swap the two codes in
++1. If turning right lowers the volume, swap the two codes in
 `KeymapManager.dialCodes` rather than inverting anything upstream.
 
 ## The bottom row posts real keystrokes
@@ -122,7 +122,9 @@ question this file raises twice; the dial is still unproven.
 
 ## Driving pi from the pad
 
-The dial picks the model on a pi pane. Everything below was read out of
+The dial is the Mac's volume knob now, so nothing on the pad opens pi's model
+picker. The picker code is intact, and the notes below still hold for it.
+Everything below was read out of
 `pi-coding-agent`'s own `dist/`, and each point rules out an approach that looks
 obvious from outside:
 

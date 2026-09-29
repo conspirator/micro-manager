@@ -3,7 +3,11 @@ import WLKit
 
 /// The dial and joystick: effort and model for whichever agent has focus.
 ///
-/// **The joystick half of this is unwired.** It now drives a radial menu instead
+/// **Both halves of this are unwired.** The dial is the Mac's volume knob now,
+/// through `SystemVolume`, so `handleDial` and `handleDialPress` have no caller,
+/// and neither has the pi model picker they open.
+///
+/// The joystick now drives a radial menu instead
 /// — see `RadialMenuController` — which reads the stick's whole position rather
 /// than four bound sectors, and can show you eight slices and where between them
 /// you are pointing. `handleJoystick` and the model cycling below are intact and
