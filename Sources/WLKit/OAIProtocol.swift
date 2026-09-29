@@ -181,7 +181,7 @@ public enum Pad {
     public static func agentSlot(for key: Int) -> Int? {
         agentKeyIDs.firstIndex(of: key)
     }
-    /// Opens the focused agent's working directory in Finder, Zed or Tower,
+    /// Opens the focused agent's working directory in Tower, VS Code or Finder,
     /// picked from a strip of app icons. First key of row 3, so the agent block
     /// above it stays whole.
     ///

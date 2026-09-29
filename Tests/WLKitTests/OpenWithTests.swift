@@ -10,13 +10,13 @@ import XCTest
 final class OpenWithTests: XCTestCase {
 
     private let finder = URL(fileURLWithPath: "/System/Library/CoreServices/Finder.app")
-    private let zed = URL(fileURLWithPath: "/Applications/Zed.app")
+    private let vsCode = URL(fileURLWithPath: "/Applications/Visual Studio Code.app")
     private let tower = URL(fileURLWithPath: "/Applications/Tower.app")
 
     private func all(_ app: OpenWith.App) -> URL? {
         switch app {
         case .finder: return finder
-        case .zed: return zed
+        case .vsCode: return vsCode
         case .tower: return tower
         }
     }
@@ -43,24 +43,24 @@ final class OpenWithTests: XCTestCase {
 
     // MARK: - What the strip holds
 
-    /// The order is the gesture: "6, right, Enter" only means Zed for as long as
-    /// Finder, Zed, Tower is the order, so it is pinned here rather than left to
-    /// whatever `CaseIterable` happens to produce.
-    func testItOffersFinderThenZedThenTower() throws {
+    /// The order is the gesture: "6, right, Enter" only means VS Code for as long
+    /// as Tower, VS Code, Finder is the order, so it is pinned here rather than
+    /// left to whatever `CaseIterable` happens to produce.
+    func testItOffersTowerThenVSCodeThenFinder() throws {
         let strip = try strip(OpenWith.start(agent: agent(), locate: all))
 
-        XCTAssertEqual(strip.choices.map(\.app), [.finder, .zed, .tower])
-        XCTAssertEqual(strip.choices.map(\.url), [finder, zed, tower])
+        XCTAssertEqual(strip.choices.map(\.app), [.tower, .vsCode, .finder])
+        XCTAssertEqual(strip.choices.map(\.url), [tower, vsCode, finder])
         XCTAssertEqual(strip.directory, URL(fileURLWithPath: "/Users/webb/src/micro-manager"))
     }
 
-    /// Finder every time, never the last thing you chose. A selection that moves
+    /// Tower every time, never the last thing you chose. A selection that moves
     /// on its own has to be read before Enter can be trusted.
-    func testItStartsOnFinder() throws {
+    func testItStartsOnTower() throws {
         let strip = try strip(OpenWith.start(agent: agent(), locate: all))
 
         XCTAssertEqual(strip.selection, 0)
-        XCTAssertEqual(strip.selected.app, .finder)
+        XCTAssertEqual(strip.selected.app, .tower)
     }
 
     /// `foreground_cwd` follows a `cd` inside the pane and `cwd` is only where
@@ -85,25 +85,25 @@ final class OpenWithTests: XCTestCase {
     /// select but not launch is a key press that fails for no visible reason.
     ///
     /// The selection is an index into `choices`, and indexing `App.all` instead
-    /// is the easy way to break this — with Zed gone, position 1 is Tower in one
-    /// list and Zed in the other.
-    func testAMissingAppIsLeftOutAndTheSelectionStillPointsAtFinder() throws {
+    /// is the easy way to break this — with VS Code gone, position 1 is Finder in
+    /// one list and VS Code in the other.
+    func testAMissingAppIsLeftOutAndTheSelectionStillPointsAtTower() throws {
         let strip = try strip(OpenWith.start(agent: agent()) { app in
-            app == .zed ? nil : self.all(app)
+            app == .vsCode ? nil : self.all(app)
         })
 
-        XCTAssertEqual(strip.choices.map(\.app), [.finder, .tower])
-        XCTAssertEqual(strip.selected.app, .finder)
-        XCTAssertEqual(strip.selected.url, finder)
+        XCTAssertEqual(strip.choices.map(\.app), [.tower, .finder])
+        XCTAssertEqual(strip.selected.app, .tower)
+        XCTAssertEqual(strip.selected.url, tower)
     }
 
-    func testAMissingFinderShiftsEveryoneLeft() throws {
+    func testAMissingTowerShiftsEveryoneLeft() throws {
         let strip = try strip(OpenWith.start(agent: agent()) { app in
-            app == .finder ? nil : self.all(app)
+            app == .tower ? nil : self.all(app)
         })
 
-        XCTAssertEqual(strip.choices.map(\.app), [.zed, .tower])
-        XCTAssertEqual(strip.selected.app, .zed,
+        XCTAssertEqual(strip.choices.map(\.app), [.vsCode, .finder])
+        XCTAssertEqual(strip.selected.app, .vsCode,
                        "the first choice is selected, whichever app that turns out to be")
     }
 
@@ -129,7 +129,7 @@ final class OpenWithTests: XCTestCase {
     func testAStripWithNoAppsInItIsRefused() {
         let start = OpenWith.start(agent: agent()) { _ in nil }
 
-        XCTAssertEqual(start, .refuse("Finder, Zed and Tower are all missing."))
+        XCTAssertEqual(start, .refuse("Tower, VS Code and Finder are all missing."))
     }
 
     // MARK: - Moving the selection
@@ -138,21 +138,21 @@ final class OpenWithTests: XCTestCase {
         var strip = try strip(OpenWith.start(agent: agent(), locate: all))
 
         strip.move(.right)
-        XCTAssertEqual(strip.selected.app, .zed)
+        XCTAssertEqual(strip.selected.app, .vsCode)
         strip.move(.right)
-        XCTAssertEqual(strip.selected.app, .tower)
+        XCTAssertEqual(strip.selected.app, .finder)
         strip.move(.right)
-        XCTAssertEqual(strip.selected.app, .finder, "right off the end comes back to the start")
+        XCTAssertEqual(strip.selected.app, .tower, "right off the end comes back to the start")
     }
 
-    /// The reason wrapping is worth having: Tower is one press away from Finder
+    /// The reason wrapping is worth having: Finder is one press away from Tower
     /// going left, and two going right.
     func testLeftWrapsPastTheFirstChoice() throws {
         var strip = try strip(OpenWith.start(agent: agent(), locate: all))
 
         strip.move(.left)
 
-        XCTAssertEqual(strip.selected.app, .tower)
+        XCTAssertEqual(strip.selected.app, .finder)
     }
 
     func testWithOneChoiceMovingGoesNowhere() throws {

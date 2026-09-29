@@ -1,8 +1,8 @@
 import AppKit
 import Foundation
 
-/// The picker on key 6: opens the focused agent's working directory in Finder,
-/// Zed or Tower.
+/// The picker on key 6: opens the focused agent's working directory in Tower,
+/// VS Code or Finder.
 ///
 /// Split the way `Tower.swift` is, and for the same reasons. The decision — what
 /// to offer, what to refuse, where the selection goes — is pure, so every
@@ -10,7 +10,7 @@ import Foundation
 /// without depending on which of the three apps the test machine has installed.
 /// Only `launch` touches the system.
 ///
-/// Opening goes through `NSWorkspace` rather than a CLI (`open`, `zed`,
+/// Opening goes through `NSWorkspace` rather than a CLI (`open`, `code`,
 /// `gittower`) because a GUI-launched app inherits
 /// `/usr/bin:/bin:/usr/sbin:/sbin`, so the binaries your terminal finds
 /// instantly are invisible here. `GitButler.swift` carries a whole search of
@@ -20,28 +20,28 @@ public enum OpenWith {
     /// The apps the strip offers, in the order it shows them.
     ///
     /// `all` is the only place that order is written down, and the order is the
-    /// gesture: "6, right, Enter" means Zed for exactly as long as this reads
-    /// Finder, Zed, Tower.
+    /// gesture: "6, right, Enter" means VS Code for exactly as long as this
+    /// reads Tower, VS Code, Finder.
     public enum App: String, Sendable, CaseIterable {
-        case finder
-        case zed
         case tower
+        case vsCode
+        case finder
 
-        public static let all: [App] = [.finder, .zed, .tower]
+        public static let all: [App] = [.tower, .vsCode, .finder]
 
         public var bundleID: String {
             switch self {
-            case .finder: return "com.apple.finder"
-            case .zed: return "dev.zed.Zed"
             case .tower: return "com.fournova.Tower3"
+            case .vsCode: return "com.microsoft.VSCode"
+            case .finder: return "com.apple.finder"
             }
         }
 
         public var displayName: String {
             switch self {
-            case .finder: return "Finder"
-            case .zed: return "Zed"
             case .tower: return "Tower"
+            case .vsCode: return "VS Code"
+            case .finder: return "Finder"
             }
         }
     }
@@ -65,8 +65,8 @@ public enum OpenWith {
     }
 
     /// What the strip is showing. `selection` indexes `choices`, never `App.all`
-    /// — with Zed uninstalled, position 1 is Tower in one list and Zed in the
-    /// other — and `choices` is never empty, which is what lets `selected` be
+    /// — with VS Code uninstalled, position 1 is Finder in one list and VS Code
+    /// in the other — and `choices` is never empty, which is what lets `selected` be
     /// non-optional.
     public struct Strip: Equatable, Sendable {
         public let directory: URL
@@ -83,7 +83,7 @@ public enum OpenWith {
         public var selected: Choice { choices[selection] }
 
         /// Wraps at both ends, as the macOS app switcher does. With three icons
-        /// that is worth having: one Left from Finder reaches Tower, where two
+        /// that is worth having: one Left from Tower reaches Finder, where two
         /// Rights would.
         public mutating func move(_ direction: Direction) {
             let count = choices.count
@@ -119,7 +119,7 @@ public enum OpenWith {
             locate(app).map { Choice(app: app, url: $0) }
         }
         guard !choices.isEmpty else {
-            return .refuse("Finder, Zed and Tower are all missing.")
+            return .refuse("Tower, VS Code and Finder are all missing.")
         }
         return .show(Strip(directory: URL(fileURLWithPath: directory), choices: choices))
     }

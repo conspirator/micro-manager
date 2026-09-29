@@ -183,7 +183,7 @@ struct MenuPanelView: View {
         macroText: String?,
         role: KeyRole?
     ) -> String {
-        if isOpenWithKey { return "Open the focused agent's directory in Finder, Zed or Tower" }
+        if isOpenWithKey { return "Open the focused agent's directory in Tower, VS Code or Finder" }
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
         if isCloseTabKey {
             return bridge.closeTabArmed

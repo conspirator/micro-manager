@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import WLKit
 
-/// The app-switcher strip on key 6: pick Finder, Zed or Tower, and the focused
+/// The app-switcher strip on key 6: pick Tower, VS Code or Finder, and the focused
 /// agent's working directory opens there.
 ///
 /// The window itself is a `KeyTakingPanel`, which this key shares with the dial's

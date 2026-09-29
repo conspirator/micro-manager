@@ -53,7 +53,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 
 | key | what it does |
 |---|---|
-| open | opens the focused agent's directory in Finder, Zed or Tower |
+| open | opens the focused agent's directory in Tower, VS Code or Finder |
 | close tab | closes the focused Herdr tab, on two presses |
 | tabs | cycles the tabs of the focused Herdr window |
 | new tab | opens a Herdr tab beside the focused agent and starts pi in it |
@@ -137,8 +137,8 @@ with the reason in the menu panel.
 
 ### The open key
 
-It puts up a horizontal strip of app icons — Finder, Zed,
-[Tower](https://www.git-tower.com) — in the manner of the macOS app switcher.
+It puts up a horizontal strip of app icons — [Tower](https://www.git-tower.com),
+VS Code, Finder — in the manner of the macOS app switcher.
 Left and Right move the selection and wrap at the ends, Enter opens the focused
 agent's working directory in the selected app, Esc dismisses, and pressing the
 key again puts the strip away. Clicking an icon opens it. The line under the
@@ -146,7 +146,7 @@ icons names the app and the directory, so you can see what Enter will do before
 you commit to it.
 
 An app that is not installed is left out of the strip rather than shown and
-refusing. The selection always starts on Finder, so "open, right, Enter" is a
+refusing. The selection always starts on Tower, so "open, right, Enter" is a
 gesture rather than a decision.
 
 This is the one window in the app that **takes the keyboard**, because it has to
@@ -161,7 +161,7 @@ The GitButler stack this key used to float is still in the app, still building
 and still tested. So is the Tower launcher that used to own key 7. Both are only
 unwired from the pad.
 
-Apps are opened through `NSWorkspace`, not by running `open`, `zed` or
+Apps are opened through `NSWorkspace`, not by running `open`, `code` or
 `gittower`. An app launched by launchd inherits `/usr/bin:/bin:/usr/sbin:/sbin`,
 so the binaries your terminal finds instantly are invisible here. The dormant
 stack code carries a whole search to work around that for `but` — Homebrew and
