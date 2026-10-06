@@ -473,7 +473,7 @@ public final class BridgeController: ObservableObject {
             return
         case .confirm:
             setCloseTabArmed(false)
-            Task { await closeFocusedTab() }
+            Task { await closeFocusedPaneOrTab() }
             return
         case .cancel(let swallow):
             setCloseTabArmed(false)
@@ -533,15 +533,20 @@ public final class BridgeController: ObservableObject {
     }
 
     /// The pad's second press, and the menu panel's second click, land here.
-    /// Closes the tab Herdr reports as focused — the same tab `cycleTabs` counts
-    /// from — and everything running in it.
-    public func closeFocusedTab() async {
+    /// Closes the focused pane when its tab holds more than one, and the whole
+    /// tab when it holds one — decided from a single `pane.list` snapshot so
+    /// focus cannot move between the read and the count.
+    public func closeFocusedPaneOrTab() async {
         do {
-            guard let tab = try await HerdrClient.focusedTab() else {
+            let panes = try await HerdrClient.listPanes()
+            switch HerdrClient.closeTarget(panes: panes) {
+            case .pane(let id):
+                try await HerdrClient.closePane(id)
+            case .tab(let id):
+                try await HerdrClient.closeTab(id)
+            case .none:
                 lastError = "Nothing has focus in Herdr right now."
-                return
             }
-            try await HerdrClient.closeTab(tab.tabID)
         } catch {
             lastError = error.localizedDescription
         }

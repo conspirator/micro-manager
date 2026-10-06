@@ -187,8 +187,8 @@ struct MenuPanelView: View {
         if isTabCycleKey { return "Cycle tabs in the focused Herdr window" }
         if isCloseTabKey {
             return bridge.closeTabArmed
-                ? "Press again to close the focused Herdr tab — Esc cancels"
-                : "Close the focused Herdr tab (two presses)"
+                ? "Press again to close the focused pane, or the whole tab when it is the last one — Esc cancels"
+                : "Close the focused pane, or the whole tab when it is the last one (two presses)"
         }
         if let macroText { return "Type: \(macroText)" }
         if let role { return role.help }

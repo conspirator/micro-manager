@@ -100,6 +100,33 @@ public struct HerdrTab: Equatable, Sendable {
     }
 }
 
+public struct HerdrPane: Equatable, Sendable {
+    public var paneID: String
+    public var tabID: String
+    public var focused: Bool
+
+    init(json: [String: Any]) {
+        paneID = json["pane_id"] as? String ?? ""
+        tabID = json["tab_id"] as? String ?? ""
+        focused = json["focused"] as? Bool ?? false
+    }
+
+    /// For tests.
+    public init(paneID: String, tabID: String, focused: Bool = false) {
+        self.paneID = paneID
+        self.tabID = tabID
+        self.focused = focused
+    }
+}
+
+/// What key 7 should close: one pane, or the tab that holds it. Decided from a
+/// single `pane.list` snapshot, so focus cannot move between reading the pane
+/// and reading the count.
+public enum CloseTarget: Sendable, Equatable {
+    case pane(String)
+    case tab(String)
+}
+
 public enum HerdrError: LocalizedError {
     case cannotConnect(String, String)
     case timeout(String)
@@ -228,6 +255,31 @@ public enum HerdrClient {
     /// `CloseTabArm`.
     public static func closeTab(_ tabID: String) async throws {
         _ = try await request("tab.close", params: ["tab_id": tabID])
+    }
+
+    /// Every pane across every workspace, in the server's own order. `pane.list`
+    /// is the right source, not `agent.list`: a split running a plain shell has
+    /// no agent, so the agent list would undercount the panes in the tab.
+    public static func listPanes() async throws -> [HerdrPane] {
+        let result = try await request("pane.list")
+        let raw = result["panes"] as? [[String: Any]] ?? []
+        return raw.map(HerdrPane.init(json:))
+    }
+
+    /// Closes one pane. Herdr may close the tab itself when this is the last
+    /// pane, but the caller does not depend on that: the single-pane case sends
+    /// `tab.close`.
+    public static func closePane(_ paneID: String) async throws {
+        _ = try await request("pane.close", params: ["pane_id": paneID])
+    }
+
+    /// What the close-tab key should close, read from one `pane.list` snapshot.
+    /// Picks the focused pane, counts the panes that share its `tab_id`, and
+    /// returns the pane when there is more than one, otherwise the tab.
+    public static func closeTarget(panes: [HerdrPane]) -> CloseTarget? {
+        guard let focused = panes.first(where: \.focused) else { return nil }
+        let sameTab = panes.filter { $0.tabID == focused.tabID }
+        return sameTab.count > 1 ? .pane(focused.paneID) : .tab(focused.tabID)
     }
 
     /// Params for `tab.create`, which takes `workspace_id`, `cwd`, `label` and
