@@ -39,7 +39,7 @@ public final class BridgeController: ObservableObject {
     /// Whether the open-with strip is on screen. Only the key light cares —
     /// the panel itself lives in the app layer.
     @Published public private(set) var openWithPanelOpen = false
-    /// Whether a Monologue take is open, for the voice key's light.
+    /// Whether a VoiceInk take is open, for the voice key's light.
     @Published public private(set) var voiceActive = false
     /// Whether key 7 is armed: one more press of it closes Herdr's focused tab.
     /// Published because both lights and the menu panel have to show it — an arm

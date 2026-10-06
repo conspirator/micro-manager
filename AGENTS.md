@@ -69,13 +69,16 @@ a test script killed the agent session that launched it — which is also the
 quickest proof the mechanism works. Use an inert key code (F16, `0x6A`) and a
 listen-only `CGEvent.tapCreate` to count what actually landed.
 
-Key 11 taps right control for Monologue, and start and stop are **different
-gestures**: two taps inside 1s lock a recording hands-free, one further tap ends
-it, and a lone tap from idle is discarded in silence. The rules are in
-`Monologue.app/Contents/Resources/HOTKEY_RECORDING_BEHAVIOR.md`, and its binary
-logs the state machine (`idle -> pressAndHold -> doubleTapLock -> idle`) if you
-need to watch it. That silent discard is what makes the light's state safe: when
-it drifts, the wasted press is the one Monologue throws away anyway.
+Key 11 taps right control for VoiceInk. Right control must be VoiceInk's primary
+recording shortcut, in Hybrid mode. A short tap starts a hands-free take, and the
+next tap stops it. The app sends two taps 150ms apart to start a take. VoiceInk
+drops the second tap, because VoiceInk ignores a press within 0.5s of the last
+one. Keep the gap under 0.5s, or the pair starts and stops the take at once. The
+rules are in `~/src/VoiceInk`, in
+`VoiceInk/Features/Shortcuts/Coordination/RecordingShortcutManager.swift`.
+The light only mirrors the pad's own presses. If a take stops from the keyboard,
+the next press sends one tap, which starts a take, and the press after it stops
+that take.
 
 ## Raycast ignores a chord without the fn bit
 
@@ -236,7 +239,7 @@ firmware a pad is on before blaming this app.
 
 **Work Louder warn that other input-monitoring apps break communication with the
 pad**, naming Karabiner and Logitech Options+. Anything holding Input Monitoring
-for hotkeys is a suspect — on this machine that includes Raycast and Monologue —
+for hotkeys is a suspect — on this machine that includes Raycast and VoiceInk —
 and it is the same failure as running the Inspector alongside the bridge.
 
 What that episode teaches, in general:

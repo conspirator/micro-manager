@@ -15,8 +15,8 @@ import ApplicationServices
 ///      releases, which leaves the whole machine holding it down.
 ///   2. The press has a length. Apps that tell a tap from a hold classify by
 ///      duration, so a down/up posted in the same instant is a different
-///      gesture from one held for a moment — Monologue's threshold for "this is
-///      a hold" is 0.4s, and the shell script this was ported from held for
+///      gesture from one held for a moment — VoiceInk's threshold for "this is
+///      a hold" is 0.5s, and the shell script this was ported from held for
 ///      30ms.
 ///
 /// Posting needs the **Accessibility** grant, on top of the Input Monitoring
@@ -52,10 +52,9 @@ public struct SystemKeyTap: Sendable, Equatable {
     /// one does not hear the other.
     public static let rightControl = SystemKeyTap(keyCode: 0x3E, flags: .maskControl)
 
-    /// Two right-control taps 150ms apart, which is Monologue's hands-free
-    /// lock: the second tap inside its 1s window cancels the buffered stop and
-    /// keeps the recording open. A single tap with no partner is discarded in
-    /// silence, so the two taps are what starts a take at all.
+    /// Two right-control taps 150ms apart, sent to start a take. VoiceInk
+    /// drops the second tap because it lands inside its 0.5s press cooldown.
+    /// Keep the gap under 0.5s, or the second tap stops the take it started.
     public static let rightControlDouble = SystemKeyTap(
         keyCode: rightControl.keyCode,
         flags: rightControl.flags,

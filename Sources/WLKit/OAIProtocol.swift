@@ -210,7 +210,7 @@ public enum Pad {
     /// Creates a Herdr tab beside the focused agent and lands in it. Last key
     /// of row 3.
     public static let newTabKeyID = 9
-    /// Starts or stops Monologue, by tapping right control. Middle of the
+    /// Starts or stops VoiceInk, by tapping right control. Middle of the
     /// bottom row.
     ///
     /// This was once `voiceKeyIDs = [10, 11]`, on the belief that one wide

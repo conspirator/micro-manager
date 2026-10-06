@@ -1,28 +1,20 @@
 import AppKit
 import WLKit
 
-/// The voice key: taps **right control**, which is Monologue's dictation
-/// hotkey.
+/// The voice key: taps **right control**, which is bound to VoiceInk's
+/// primary recording shortcut in its Hybrid mode.
 ///
-/// Monologue is system-wide and types into whatever holds focus, so this
-/// deliberately does not care which agent Herdr has focused, or whether Herdr
-/// is running at all.
+/// VoiceInk types into whatever holds focus, so this does not care which agent
+/// Herdr has focused, or whether Herdr is running at all.
 ///
-/// Start and stop are *different gestures*, which is why this holds state.
-/// From Monologue's own `HOTKEY_RECORDING_BEHAVIOR.md`, and the state machine
-/// its binary logs (`idle -> pressAndHold -> doubleTapLock -> idle`):
+/// A press sends two taps when no take is open and one when a take is. In
+/// Hybrid mode a short tap starts a hands-free take and the next tap stops it.
+/// VoiceInk ignores a press within 0.5s of the previous one, so the second tap
+/// of the pair is dropped and the pair starts the take.
 ///
-///   - two taps inside its 1s window cancel the buffered stop and hold the
-///     session open — hands-free, and the only way to *start* a take from a
-///     single keypress;
-///   - one more tap while locked ends the recording;
-///   - a lone tap from idle, with no second tap, is discarded in silence: no
-///     transcript, no error.
-///
-/// So a press sends two taps when no take is open and one when a take is. The
-/// state drifts if you stop a take from the keyboard instead, and it heals in
-/// one press: the stray single tap is the case Monologue throws away quietly,
-/// and the press after it starts a recording properly.
+/// `takeOpen` only mirrors this key's presses. If you stop a take from the
+/// keyboard, the light stays red and the next press sends one tap, which
+/// starts a take. Press once more to stop it.
 @MainActor
 final class VoiceController {
 

@@ -16,23 +16,22 @@ final class SystemKeyTapTests: XCTestCase {
     }
 
     /// Right control, not its left twin: they are different key codes and
-    /// Monologue is bound to one of them.
+    /// VoiceInk is bound to one of them.
     func testRightControlCarriesTheControlFlag() {
         XCTAssertEqual(SystemKeyTap.rightControl.keyCode, 0x3E)
         XCTAssertEqual(SystemKeyTap.rightControl.flags, .maskControl)
         XCTAssertEqual(SystemKeyTap.rightControl.taps, 1)
     }
 
-    /// Monologue reads two taps inside its 1 s window as the hands-free lock.
-    /// 150 ms is the gap the known-good shell script uses; anything past a
-    /// second is two separate quick taps, and both get discarded.
-    func testDoubleTapIsTwoTapsInsideMonologuesWindow() {
+    /// VoiceInk drops the second tap only inside its 0.5 s press cooldown.
+    /// A longer gap makes the second tap stop the take the first one started.
+    func testDoubleTapIsTwoTapsInsideVoiceInksCooldown() {
         let double = SystemKeyTap.rightControlDouble
         XCTAssertEqual(double.keyCode, SystemKeyTap.rightControl.keyCode)
         XCTAssertEqual(double.flags, SystemKeyTap.rightControl.flags)
         XCTAssertEqual(double.taps, 2)
         XCTAssertEqual(double.gap, 0.15, accuracy: 0.0001)
-        XCTAssertLessThan(double.gap, 1.0, "two taps a second apart are not a double tap")
+        XCTAssertLessThan(double.gap, 0.5, "a tap after VoiceInk's cooldown stops the take")
     }
 
     /// A zero-length press is classified by duration downstream, so the hold is

@@ -182,7 +182,7 @@ public enum StatusMapper {
         )
     }
 
-    /// The voice key. Dim white at rest; breathing red while a Monologue take is
+    /// The voice key. Dim white at rest; breathing red while a VoiceInk take is
     /// open, which is the one state on this row worth seeing across a room.
     public static func voiceThread(
         id: Int,

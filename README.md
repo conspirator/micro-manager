@@ -59,7 +59,7 @@ agent key pressed from a browser used to move a cursor you could not see. Set
 | new tab | opens a Herdr tab beside the focused agent and starts pi in it |
 
 **Row 4** is Esc — it taps Esc wherever the focus is — the voice key, which taps
-right control to start and stop [Monologue](https://www.monologue.to), and Enter.
+right control to start and stop [VoiceInk](https://github.com/Beingpax/VoiceInk), and Enter.
 
 The new-tab key opens a tab beside the focused agent, in the directory that
 agent is working in, focuses it, and brings the terminal forward. Esc and Enter
@@ -75,10 +75,11 @@ confirms lets go after five seconds — the ring is how you read whether an agen
 needs you, so it is only borrowed. Armed red is solid where blocked-red breathes.
 
 The voice key sends **two** right-control taps to start a take and **one** to
-stop it, because that is how Monologue's hotkey works — two taps inside a second
-lock recording hands-free, one more tap ends it, and a lone tap from idle is
-discarded silently. The key breathes red while a take is open. Stopping a take
-from the keyboard instead makes that drift, and the next press puts it right.
+stop it. Bind right control to VoiceInk's primary recording shortcut, in Hybrid
+mode. A short tap starts a hands-free take and the next tap stops it. VoiceInk
+ignores the second tap of the pair, because it lands inside VoiceInk's 0.5s
+press cooldown. The key breathes red while a take is open. If you stop a take
+from the keyboard, the light stays red, and two more presses put it right.
 Both Esc/Enter and the voice key need **Accessibility** on top of Input
 Monitoring, since they synthesise key events.
 
